@@ -40,7 +40,7 @@ const Login = () => {
             <div className="glass-panel login-box">
                 <div className="login-logo">
                     <Layers size={48} className="text-primary" style={{ margin: '0 auto 1rem' }} />
-                    <h1>OM Shop</h1>
+                    <h1>OM Food Products</h1>
                     <p>Stock & Billing Management</p>
                 </div>
 

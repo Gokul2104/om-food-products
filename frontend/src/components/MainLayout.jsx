@@ -28,7 +28,7 @@ const MainLayout = () => {
             <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
                 <div className="sidebar-header">
                     <Layers className="text-primary" size={28} />
-                    <h2>OM Shop</h2>
+                    <h2>OM Food Products</h2>
                 </div>
 
                 <nav className="sidebar-nav">

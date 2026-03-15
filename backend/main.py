@@ -14,9 +14,9 @@ from routers import auth, users, categories, products, stock, invoices, returns,
 from core.security import get_password_hash
 
 app = FastAPI(
-    title="OM Shop — Stock & Billing API",
+    title="OM Food Products — Stock & Billing API",
     version="1.0.0",
-    description="Stock Management and Billing system for OM Shop"
+    description="Stock Management and Billing system for OM Food Products"
 )
 
 app.add_middleware(
@@ -62,7 +62,7 @@ async def seed_default_admin():
 
 @app.get("/")
 async def root():
-    return {"message": "OM Shop API is running", "docs": "/docs"}
+    return {"message": "OM Food Products API is running", "docs": "/docs"}
 
 
 if __name__ == "__main__":

@@ -77,7 +77,8 @@ async def create_invoice(data: InvoiceCreate, current_user: User = Depends(get_c
             quantity=item_in.quantity,
             unit_price=product.selling_price,
             tax_rate=product.tax_rate,
-            line_total=line_total
+            line_total=line_total,
+            remaining_stock=product.current_stock
         ))
 
         # Deduct stock
@@ -95,7 +96,15 @@ async def create_invoice(data: InvoiceCreate, current_user: User = Depends(get_c
             performed_by_name=current_user.name,
         ).insert()
 
-    # Grand total calculation with global discount
+    # Calculate final tax and grand total
+    # If there's a global discount, we should apply it pre-tax for accuracy.
+    # We'll calculate the 'effective' tax by reducing the tax proportionally.
+    if sub_total > 0 and data.global_discount > 0:
+        # Calculate weighted average tax rate
+        weighted_tax_rate = tax_amount / sub_total
+        # Reduce tax_amount proportionally based on the discount
+        tax_amount = (sub_total - data.global_discount) * weighted_tax_rate
+    
     grand_total = (sub_total - data.global_discount) + tax_amount
     paid_amount = data.paid_amount if data.paid_amount is not None else grand_total
 

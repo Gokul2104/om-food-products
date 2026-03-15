@@ -17,7 +17,7 @@ class ProductCreate(BaseModel):
     name: str
     category_id: Optional[str] = None
     description: Optional[str] = None
-    unit: UnitType = UnitType.pcs
+    unit: UnitType = UnitType.gms
     selling_price: float
     cost_price: float
     tax_rate: float = 0.0

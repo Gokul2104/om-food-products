@@ -108,19 +108,19 @@ const Reports = () => {
                         <div className="card kpi-card">
                             <div className="kpi-info" style={{ marginLeft: 0 }}>
                                 <h3>Total Historical Revenue</h3>
-                                <p>₹{summary?.total_sales_price.toLocaleString()}</p>
+                                <p>₹{summary?.total_sales_price?.toLocaleString() ?? '0'}</p>
                             </div>
                         </div>
                         <div className="card kpi-card">
                             <div className="kpi-info" style={{ marginLeft: 0 }}>
                                 <h3>Total Buy Price (Stock)</h3>
-                                <p>₹{summary?.total_buy_price.toLocaleString()}</p>
+                                <p>₹{summary?.total_buy_price?.toLocaleString() ?? '0'}</p>
                             </div>
                         </div>
                         <div className="card kpi-card">
                             <div className="kpi-info" style={{ marginLeft: 0 }}>
                                 <h3>Pending Credits</h3>
-                                <p style={{ color: 'var(--danger)' }}>₹{summary?.credits_pending.toLocaleString()}</p>
+                                <p style={{ color: 'var(--danger)' }}>₹{summary?.credits_pending?.toLocaleString() ?? '0'}</p>
                             </div>
                         </div>
                     </div>

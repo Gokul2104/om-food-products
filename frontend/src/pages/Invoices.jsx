@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import api from '../api';
-import { Search, Filter, Eye, Printer, AlertCircle } from 'lucide-react';
+import { Search, Filter, Eye, Printer, AlertCircle, X } from 'lucide-react';
+import { useReactToPrint } from 'react-to-print';
+import InvoiceLayout from '../components/InvoiceLayout';
 
 const Invoices = () => {
     const [invoices, setInvoices] = useState([]);
@@ -8,6 +10,12 @@ const Invoices = () => {
     const [error, setError] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('');
+    
+    // Modal state
+    const [selectedInvoice, setSelectedInvoice] = useState(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    
+    const printRef = useRef();
 
     useEffect(() => {
         fetchInvoices();
@@ -23,6 +31,29 @@ const Invoices = () => {
             setError('Failed to fetch invoices');
             setLoading(false);
         }
+    };
+
+    const handlePrint = useReactToPrint({
+        content: () => printRef.current,
+    });
+
+    const openInvoiceDetail = (inv) => {
+        setSelectedInvoice(inv);
+        setIsModalOpen(true);
+    };
+
+    const closeInvoiceDetail = () => {
+        setIsModalOpen(false);
+        setSelectedInvoice(null);
+    };
+
+    const handleQuickPrint = (e, inv) => {
+        e.stopPropagation();
+        setSelectedInvoice(inv);
+        // We need a small delay to ensure the component is rendered with the new inv before printing
+        setTimeout(() => {
+            handlePrint();
+        }, 100);
     };
 
     const filteredInvoices = invoices.filter(inv => {
@@ -134,10 +165,18 @@ const Invoices = () => {
                                         </td>
                                         <td>
                                             <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                <button className="btn btn-secondary btn-sm" title="View Detail">
+                                                <button 
+                                                    className="btn btn-secondary btn-sm" 
+                                                    title="View Detail"
+                                                    onClick={() => openInvoiceDetail(inv)}
+                                                >
                                                     <Eye size={16} />
                                                 </button>
-                                                <button className="btn btn-secondary btn-sm" title="Print">
+                                                <button 
+                                                    className="btn btn-secondary btn-sm" 
+                                                    title="Print"
+                                                    onClick={(e) => handleQuickPrint(e, inv)}
+                                                >
                                                     <Printer size={16} />
                                                 </button>
                                             </div>
@@ -149,6 +188,34 @@ const Invoices = () => {
                     </table>
                 </div>
             </div>
+
+            {/* Hidden printable area for quick print */}
+            <div style={{ display: 'none' }}>
+                <InvoiceLayout ref={printRef} invoice={selectedInvoice} />
+            </div>
+
+            {/* Modal for detail view */}
+            {isModalOpen && (
+                <div className="modal-overlay" onClick={closeInvoiceDetail}>
+                    <div className="modal-content fadeIn" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+                        <div className="modal-header">
+                            <h3 style={{ margin: 0 }}>Invoice Details</h3>
+                            <button className="close-btn" onClick={closeInvoiceDetail}><X size={24} /></button>
+                        </div>
+                        <div className="modal-body" style={{ backgroundColor: '#f0f0f0', padding: '1rem' }}>
+                            <div style={{ backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                                <InvoiceLayout invoice={selectedInvoice} />
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button className="btn btn-secondary" onClick={closeInvoiceDetail}>Close</button>
+                            <button className="btn btn-primary" onClick={handlePrint}>
+                                <Printer size={18} /> Print
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

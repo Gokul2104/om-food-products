@@ -6,12 +6,9 @@ from enum import Enum
 from models.category import Category
 
 class UnitType(str, Enum):
-    pcs = "pcs"
-    kg = "kg"
-    ltr = "ltr"
-    box = "box"
-    gm = "gm"
-    dozen = "dozen"
+    mls = "mls"
+    gms = "gms"
+    pkts = "pkts"
 
 class Product(Document):
     p_id: str = Field(..., description="Unique SKU like PRD-0001")
@@ -19,7 +16,7 @@ class Product(Document):
     category_id: Optional[str] = None  # stored as string id for simplicity
     category_name: Optional[str] = None  # snapshot for quick display
     description: Optional[str] = None
-    unit: UnitType = UnitType.pcs
+    unit: UnitType = UnitType.gms
     selling_price: float
     cost_price: float
     tax_rate: float = 0.0  # GST percentage

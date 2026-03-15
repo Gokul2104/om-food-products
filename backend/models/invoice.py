@@ -21,6 +21,7 @@ class InvoiceItem(BaseModel):
     unit_price: float
     tax_rate: float = 0.0
     line_total: float  # unit_price * quantity (before tax & global discount)
+    remaining_stock: float = 0.0  # post-sale stock of this product
 
 class Invoice(Document):
     invoice_number: str  # e.g. INV-20260314-001

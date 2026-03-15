@@ -9,7 +9,7 @@ const Products = () => {
     const [editingId, setEditingId] = useState(null);
     const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-    const initialForm = { p_id: '', name: '', category_id: '', description: '', unit: 'pcs', selling_price: '', cost_price: '', tax_rate: '0', min_stock_alert: '5' };
+    const initialForm = { p_id: '', name: '', category_id: '', description: '', unit: 'gms', selling_price: '', cost_price: '', tax_rate: '0', min_stock_alert: '5' };
     const [formData, setFormData] = useState(initialForm);
     const [filter, setFilter] = useState('');
 
@@ -112,8 +112,9 @@ const Products = () => {
                             <div className="form-group">
                                 <label className="form-label">Unit</label>
                                 <select style={{ width: '100%' }} value={formData.unit} onChange={e => setFormData({ ...formData, unit: e.target.value })}>
-                                    <option value="pcs">Pieces (pcs)</option><option value="kg">Kilograms (kg)</option>
-                                    <option value="ltr">Liters (ltr)</option><option value="box">Box</option><option value="packet">Packet</option>
+                                    <option value="mls">mls</option>
+                                    <option value="gms">gms</option>
+                                    <option value="pkts">pkts</option>
                                 </select>
                             </div>
                             <div className="form-group">

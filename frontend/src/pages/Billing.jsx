@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, ShoppingCart, Plus, Minus, Trash2, Printer } from 'lucide-react';
 import { useReactToPrint } from 'react-to-print';
 import api from '../api';
+import InvoiceLayout from '../components/InvoiceLayout';
 
 const Billing = () => {
     const [products, setProducts] = useState([]);
@@ -71,10 +72,19 @@ const Billing = () => {
 
     const subTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const discountVal = parseFloat(globalDiscount) || 0;
-    const taxTotal = cart.reduce((sum, item) => {
+
+    // Calculate tax based on discounted subtotal
+    // Step 1: Get original tax amount
+    const originalTax = cart.reduce((sum, item) => {
         const lineVal = item.price * item.quantity;
         return sum + (lineVal * (item.tax_rate / 100));
     }, 0);
+
+    // Step 2: Calculate effective tax proportionally based on discount
+    const taxTotal = subTotal > 0
+        ? Math.max(0, (subTotal - discountVal) * (originalTax / subTotal))
+        : 0;
+
     const grandTotal = Math.max(0, subTotal - discountVal + taxTotal);
 
     const handleCheckout = async () => {
@@ -103,9 +113,20 @@ const Billing = () => {
             setPaidAmount('');
             setGlobalDiscount('');
 
-            // Quick re-fetch to update available stock on shelf
-            const prodRes = await api.get('/products');
-            setProducts(prodRes.data.filter(p => p.is_active && p.current_stock > 0));
+            // Sync stock levels directly from the invoice response
+            setProducts(prevProducts => {
+                const updatedProducts = [...prevProducts];
+                res.data.items.forEach(soldItem => {
+                    const idx = updatedProducts.findIndex(p => p.id === soldItem.product_id);
+                    if (idx !== -1) {
+                        updatedProducts[idx] = { 
+                            ...updatedProducts[idx], 
+                            current_stock: soldItem.remaining_stock 
+                        };
+                    }
+                });
+                return updatedProducts.filter(p => p.current_stock > 0);
+            });
 
         } catch (err) {
             alert(err.response?.data?.detail || 'Checkout failed');
@@ -125,57 +146,8 @@ const Billing = () => {
     if (invoice) {
         return (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '2rem' }}>
-                <div className="card" style={{ width: '400px', backgroundColor: 'white', color: 'black', padding: '2rem' }} ref={printRef}>
-                    <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                        <h2 style={{ color: 'black', margin: 0 }}>OM Shop</h2>
-                        <p style={{ color: '#666', fontSize: '0.9rem' }}>Tax Invoice</p>
-                        <p style={{ fontSize: '0.85rem' }}>{new Date(invoice.created_at).toLocaleString()}</p>
-                        <p style={{ fontWeight: 'bold', marginTop: '0.5rem' }}>{invoice.invoice_number}</p>
-                    </div>
-
-                    <table style={{ width: '100%', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-                        <thead>
-                            <tr style={{ borderBottom: '1px solid #ccc' }}>
-                                <th style={{ color: 'black', padding: '0.5rem 0' }}>Item</th>
-                                <th style={{ color: 'black', textAlign: 'right', padding: '0.5rem 0' }}>Qty</th>
-                                <th style={{ color: 'black', textAlign: 'right', padding: '0.5rem 0' }}>Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {invoice.items.map((item, idx) => (
-                                <tr key={idx}>
-                                    <td style={{ padding: '0.5rem 0' }}>{item.product_name}</td>
-                                    <td style={{ textAlign: 'right', padding: '0.5rem 0' }}>{item.quantity}</td>
-                                    <td style={{ textAlign: 'right', padding: '0.5rem 0' }}>₹{item.line_total.toFixed(2)}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-
-                    <div style={{ borderTop: '1px dashed #ccc', paddingTop: '1rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                            <span>Subtotal</span><span>₹{invoice.sub_total.toFixed(2)}</span>
-                        </div>
-                        {invoice.global_discount > 0 && (
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', color: '#d32f2f' }}>
-                                <span>Discount</span><span>-₹{invoice.global_discount.toFixed(2)}</span>
-                            </div>
-                        )}
-                        {invoice.tax_amount > 0 && (
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                <span>Tax</span><span>₹{invoice.tax_amount.toFixed(2)}</span>
-                            </div>
-                        )}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid #000', fontWeight: 'bold', fontSize: '1.2rem' }}>
-                            <span>Total</span><span>₹{invoice.grand_total.toFixed(2)}</span>
-                        </div>
-                    </div>
-
-                    <div style={{ textAlign: 'center', marginTop: '3rem', fontSize: '0.85rem', color: '#666' }}>
-                        Paid via {invoice.payment_method}
-                        <br />
-                        Thank you for shopping!
-                    </div>
+                <div className="card" style={{ padding: 0 }} ref={printRef}>
+                    <InvoiceLayout invoice={invoice} />
                 </div>
 
                 <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
@@ -269,12 +241,12 @@ const Billing = () => {
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                         <span style={{ color: 'var(--text-muted)' }}>Discount (₹)</span>
-                        <input 
-                            type="number" 
-                            style={{ width: '100px', textAlign: 'right' }} 
-                            placeholder="0.00" 
-                            value={globalDiscount} 
-                            onChange={e => setGlobalDiscount(e.target.value)} 
+                        <input
+                            type="number"
+                            style={{ width: '100px', textAlign: 'right' }}
+                            placeholder="0.00"
+                            value={globalDiscount}
+                            onChange={e => setGlobalDiscount(e.target.value)}
                         />
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', color: 'var(--text-muted)' }}>

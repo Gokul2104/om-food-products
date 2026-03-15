@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, Query
 from models.invoice import Invoice, PaymentMethod
+from models.return_model import Return
 from models.product import Product
-from models.stock_entry import StockEntry
+from models.stock_entry import StockEntry, StockEntryType
 from models.user import UserRole
 from core.security import get_current_user
 from datetime import datetime, timedelta
@@ -28,23 +29,40 @@ async def daily_report(
         Invoice.created_at < day_end
     ).to_list()
 
-    total_sales = sum(inv.grand_total for inv in invoices)
-    total_discount = sum(inv.discount_total for inv in invoices)
+    returns = await Return.find(
+        Return.created_at >= day_start,
+        Return.created_at < day_end
+    ).to_list()
+
+    gross_sales = sum(inv.grand_total for inv in invoices)
+    refund_total = sum(ret.refund_amount for ret in returns)
+    total_sales = gross_sales - refund_total
+    
+    total_discount = sum(inv.global_discount for inv in invoices)
     total_tax = sum(inv.tax_amount for inv in invoices)
     total_invoices = len(invoices)
 
-    # Payment method breakdown
+    # Payment method breakdown (Net)
     payment_breakdown = {}
     for inv in invoices:
         pm = inv.payment_method
         payment_breakdown[pm] = payment_breakdown.get(pm, 0) + inv.grand_total
+    
+    for ret in returns:
+        rm = ret.refund_method
+        payment_breakdown[rm] = payment_breakdown.get(rm, 0) - ret.refund_amount
 
-    # Hourly sales
+    # Hourly sales (Net)
     hourly = {}
     for inv in invoices:
         hour = inv.created_at.hour
         key = f"{hour:02d}:00"
         hourly[key] = hourly.get(key, 0) + inv.grand_total
+
+    for ret in returns:
+        hour = ret.created_at.hour
+        key = f"{hour:02d}:00"
+        hourly[key] = hourly.get(key, 0) - ret.refund_amount
 
     return {
         "date": target.date().isoformat(),
@@ -84,11 +102,19 @@ async def monthly_report(
         Invoice.created_at < month_end
     ).to_list()
 
-    total_sales = sum(inv.grand_total for inv in invoices)
-    total_discount = sum(inv.discount_total for inv in invoices)
+    returns = await Return.find(
+        Return.created_at >= month_start,
+        Return.created_at < month_end
+    ).to_list()
+
+    gross_sales = sum(inv.grand_total for inv in invoices)
+    refund_total = sum(ret.refund_amount for ret in returns)
+    total_sales = gross_sales - refund_total
+
+    total_discount = sum(inv.global_discount for inv in invoices)
     total_tax = sum(inv.tax_amount for inv in invoices)
 
-    # Daily breakdown
+    # Daily breakdown (Net)
     daily = {}
     for inv in invoices:
         day = inv.created_at.strftime("%Y-%m-%d")
@@ -96,12 +122,22 @@ async def monthly_report(
             daily[day] = {"sales": 0, "count": 0}
         daily[day]["sales"] += inv.grand_total
         daily[day]["count"] += 1
+    
+    for ret in returns:
+        day = ret.created_at.strftime("%Y-%m-%d")
+        if day not in daily:
+            daily[day] = {"sales": 0, "count": 0}
+        daily[day]["sales"] -= ret.refund_amount
 
-    # Payment breakdown
+    # Payment breakdown (Net)
     payment_breakdown = {}
     for inv in invoices:
         pm = inv.payment_method
         payment_breakdown[pm] = payment_breakdown.get(pm, 0) + inv.grand_total
+
+    for ret in returns:
+        rm = ret.refund_method
+        payment_breakdown[rm] = payment_breakdown.get(rm, 0) - ret.refund_amount
 
     return {
         "year": year,
@@ -128,9 +164,13 @@ async def stock_summary(_=Depends(get_current_user)):
     all_in_entries = await StockEntry.find(StockEntry.type == StockEntryType.IN).to_list()
     total_buy_price = sum((e.quantity * (e.unit_cost or 0)) for e in all_in_entries)
 
-    # Total Sales Price (Historical revenue)
+    # Total Sales Price (Historical revenue - Returns)
     all_invoices = await Invoice.find_all().to_list()
-    total_sales_revenue = sum(inv.grand_total for inv in all_invoices)
+    all_returns = await Return.find_all().to_list()
+    
+    gross_revenue = sum(inv.grand_total for inv in all_invoices)
+    total_refunds = sum(ret.refund_amount for ret in all_returns)
+    total_sales_revenue = gross_revenue - total_refunds
 
     # Credits Pending
     credits_pending = sum((inv.grand_total - inv.paid_amount) for inv in all_invoices)
