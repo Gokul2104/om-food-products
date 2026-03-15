@@ -25,3 +25,16 @@ dist-ssr
 
 # OS generated files
 Thumbs.db
+
+# Environment files
+.env
+.env.project
+.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+.env/
