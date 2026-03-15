@@ -38,7 +38,7 @@ def entry_out(e: StockEntry):
 @router.get("", dependencies=[Depends(get_current_user)])
 async def get_stock_levels():
     products = await Product.find_all().to_list()
-    return [
+    result = [
         {
             "id": str(p.id),
             "p_id": p.p_id,
@@ -52,6 +52,9 @@ async def get_stock_levels():
         }
         for p in products if p.is_active
     ]
+    # Sort: Low stock products first, then by current stock level
+    result.sort(key=lambda x: (not x["is_low_stock"], x["current_stock"]))
+    return result
 
 @router.post("/in", dependencies=[Depends(stock_or_admin)])
 async def stock_in(data: StockInRequest, current_user: User = Depends(get_current_user)):

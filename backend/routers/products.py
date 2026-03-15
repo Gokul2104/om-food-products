@@ -73,6 +73,9 @@ async def list_products(
         if low_stock is True and p.current_stock > p.min_stock_alert:
             continue
         result.append(prod_out(p))
+    
+    # Sort: Low stock products first, then by current stock level
+    result.sort(key=lambda x: (not x["is_low_stock"], x["current_stock"]))
     return result
 
 @router.get("/low-stock", dependencies=[Depends(get_current_user)])
