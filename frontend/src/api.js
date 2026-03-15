@@ -1,6 +1,7 @@
-import axios from "/node_modules/.vite/deps/axios.js?v=aefdebe9";
+import axios from 'axios';
+
 const api = axios.create({
-    baseURL: "http://192.168.0.10:8000/api"
+    baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000/api"
 });
 // Add a request interceptor to append JWT token
 api.interceptors.request.use((config) => {
