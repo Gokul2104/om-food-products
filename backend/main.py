@@ -21,7 +21,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://om-food-products.onrender.com/"],
+    allow_origins=["https://om-food-products.onrender.com"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
