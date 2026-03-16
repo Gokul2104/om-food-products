@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import BaseModel
 from typing import Optional, List
 from models.stock_entry import StockEntry, StockEntryType
@@ -36,8 +36,21 @@ def entry_out(e: StockEntry):
     }
 
 @router.get("", dependencies=[Depends(get_current_user)])
-async def get_stock_levels():
-    products = await Product.find_all().to_list()
+async def get_stock_levels(search: Optional[str] = Query(None)):
+    # Build query
+    filters = [Product.is_active == True]
+    if search:
+        # Case-insensitive search on name or p_id
+        filters.append({
+            "$or": [
+                {"name": {"$regex": search, "$options": "i"}},
+                {"p_id": {"$regex": search, "$options": "i"}}
+            ]
+        })
+    
+    # Execute query
+    products = await Product.find(*filters).to_list()
+    
     result = [
         {
             "id": str(p.id),
@@ -50,8 +63,9 @@ async def get_stock_levels():
             "is_low_stock": p.current_stock <= p.min_stock_alert,
             "is_active": p.is_active
         }
-        for p in products if p.is_active
+        for p in products
     ]
+    
     # Sort: Low stock products first, then by current stock level
     result.sort(key=lambda x: (not x["is_low_stock"], x["current_stock"]))
     return result

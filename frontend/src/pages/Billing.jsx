@@ -15,16 +15,20 @@ const Billing = () => {
     const [globalDiscount, setGlobalDiscount] = useState('');
 
     const [invoice, setInvoice] = useState(null);
+    const [loading, setLoading] = useState(true);
     const printRef = useRef();
 
     useEffect(() => {
         const fetchProducts = async () => {
+            setLoading(true);
             try {
                 const res = await api.get('/products');
                 // Only active products with stock > 0
                 setProducts(res.data.filter(p => p.is_active && p.current_stock > 0));
             } catch (err) {
                 console.error(err);
+            } finally {
+                setLoading(false);
             }
         };
         fetchProducts();
@@ -172,20 +176,27 @@ const Billing = () => {
                         onChange={e => setSearchQuery(e.target.value)}
                     />
                 </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem', overflowY: 'auto', paddingRight: '0.5rem', alignContent: 'start' }}>
-                    {filteredProducts.map(p => (
-                        <div key={p.id} className="card" style={{ padding: '1rem', cursor: 'pointer', transition: 'transform 0.1s', userSelect: 'none' }} onClick={() => addToCart(p)} onMouseDown={e => e.currentTarget.style.transform = 'scale(0.97)'} onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>{p.p_id}</div>
-                            <h4 style={{ margin: 0, marginBottom: '0.5rem' }}>{p.name}</h4>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}>
-                                <span style={{ fontWeight: 600, color: 'var(--primary)' }}>₹{p.selling_price}</span>
-                                <span className="badge badge-success" style={{ fontSize: '0.7rem' }}>{p.current_stock} in stock</span>
+                
+                {loading ? (
+                    <div className="loading-overlay" style={{ flex: 1 }}>
+                        <div className="spinner"></div>
+                        <p>Loading catalog...</p>
+                    </div>
+                ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem', overflowY: 'auto', paddingRight: '0.5rem', alignContent: 'start' }}>
+                        {filteredProducts.map(p => (
+                            <div key={p.id} className="card" style={{ padding: '1rem', cursor: 'pointer', transition: 'transform 0.1s', userSelect: 'none' }} onClick={() => addToCart(p)} onMouseDown={e => e.currentTarget.style.transform = 'scale(0.97)'} onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>{p.p_id}</div>
+                                <h4 style={{ margin: 0, marginBottom: '0.5rem' }}>{p.name}</h4>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}>
+                                    <span style={{ fontWeight: 600, color: 'var(--primary)' }}>₹{p.selling_price}</span>
+                                    <span className="badge badge-success" style={{ fontSize: '0.7rem' }}>{p.current_stock} in stock</span>
+                                </div>
                             </div>
-                        </div>
-                    ))}
-                    {filteredProducts.length === 0 && <div style={{ gridColumn: '1/-1', textAlign: 'center', color: 'var(--text-muted)', padding: '3rem' }}>No matching products with stock available</div>}
-                </div>
+                        ))}
+                        {filteredProducts.length === 0 && <div style={{ gridColumn: '1/-1', textAlign: 'center', color: 'var(--text-muted)', padding: '3rem' }}>No matching products with stock available</div>}
+                    </div>
+                )}
             </div>
 
             {/* POS Right: Cart Checkout */}

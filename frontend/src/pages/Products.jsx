@@ -12,21 +12,31 @@ const Products = () => {
     const initialForm = { p_id: '', name: '', category_id: '', description: '', unit: 'gms', selling_price: '', cost_price: '', tax_rate: '0', min_stock_alert: '5' };
     const [formData, setFormData] = useState(initialForm);
     const [filter, setFilter] = useState('');
+    const [search, setSearch] = useState('');
+    const [loading, setLoading] = useState(true);
 
-    const fetchData = async () => {
+    const fetchData = async (query = '') => {
+        setLoading(true);
         try {
             const [prodRes, catRes] = await Promise.all([
-                api.get('/products'),
+                api.get(`/products?search=${query}`),
                 api.get('/categories')
             ]);
             setProducts(prodRes.data);
             setCategories(catRes.data);
         } catch (err) {
             console.error(err);
+        } finally {
+            setLoading(false);
         }
     };
 
-    useEffect(() => { fetchData(); }, []);
+    useEffect(() => { 
+        const delaySearch = setTimeout(() => {
+            fetchData(search);
+        }, 300);
+        return () => clearTimeout(delaySearch);
+    }, [search]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -77,6 +87,14 @@ const Products = () => {
             <div className="page-header">
                 <h1 className="page-title">Products</h1>
                 <div style={{ display: 'flex', gap: '1rem' }}>
+                    <input 
+                        type="text" 
+                        placeholder="Search..." 
+                        className="form-select"
+                        style={{ width: '200px' }}
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                    />
                     <select className="form-select" value={filter} onChange={e => setFilter(e.target.value)}>
                         <option value="">All Categories</option>
                         {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -142,42 +160,49 @@ const Products = () => {
                 </div>
             )}
 
-            <div className="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>SKU</th>
-                            <th>Product Name</th>
-                            <th>Category</th>
-                            <th>Price</th>
-                            <th>Stock</th>
-                            {user.role === 'Admin' && <th style={{ textAlign: 'right' }}>Actions</th>}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filtered.map(p => (
-                            <tr key={p.id}>
-                                <td style={{ color: 'var(--text-muted)' }}>{p.p_id}</td>
-                                <td style={{ fontWeight: 500, color: 'white' }}>{p.name}</td>
-                                <td>{p.category_name || '-'}</td>
-                                <td>₹{p.selling_price}</td>
-                                <td>
-                                    <span className={`badge ${p.is_low_stock ? 'badge-danger' : 'badge-success'}`}>
-                                        {p.current_stock} {p.unit}
-                                    </span>
-                                </td>
-                                {user.role === 'Admin' && (
-                                    <td style={{ textAlign: 'right' }}>
-                                        <button className="btn btn-outline" style={{ padding: '0.4rem', marginRight: '0.5rem' }} onClick={() => handleEdit(p)}><Edit2 size={16} /></button>
-                                        <button className="btn btn-danger" style={{ padding: '0.4rem' }} onClick={() => handleDelete(p.id)}><Trash2 size={16} /></button>
-                                    </td>
-                                )}
+            {loading ? (
+                <div className="loading-overlay">
+                    <div className="spinner"></div>
+                    <p>Loading products...</p>
+                </div>
+            ) : (
+                <div className="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>SKU</th>
+                                <th>Product Name</th>
+                                <th>Category</th>
+                                <th>Price</th>
+                                <th>Stock</th>
+                                {user.role === 'Admin' && <th style={{ textAlign: 'right' }}>Actions</th>}
                             </tr>
-                        ))}
-                        {filtered.length === 0 && <tr><td colSpan="6" style={{ textAlign: 'center', padding: '2rem' }}>No products found</td></tr>}
-                    </tbody>
-                </table>
-            </div>
+                        </thead>
+                        <tbody>
+                            {filtered.map(p => (
+                                <tr key={p.id}>
+                                    <td style={{ color: 'var(--text-muted)' }}>{p.p_id}</td>
+                                    <td style={{ fontWeight: 500, color: 'white' }}>{p.name}</td>
+                                    <td>{p.category_name || '-'}</td>
+                                    <td>₹{p.selling_price}</td>
+                                    <td>
+                                        <span className={`badge ${p.is_low_stock ? 'badge-danger' : 'badge-success'}`}>
+                                            {p.current_stock} {p.unit}
+                                        </span>
+                                    </td>
+                                    {user.role === 'Admin' && (
+                                        <td style={{ textAlign: 'right' }}>
+                                            <button className="btn btn-outline" style={{ padding: '0.4rem', marginRight: '0.5rem' }} onClick={() => handleEdit(p)}><Edit2 size={16} /></button>
+                                            <button className="btn btn-danger" style={{ padding: '0.4rem' }} onClick={() => handleDelete(p.id)}><Trash2 size={16} /></button>
+                                        </td>
+                                    )}
+                                </tr>
+                            ))}
+                            {filtered.length === 0 && <tr><td colSpan="6" style={{ textAlign: 'center', padding: '2rem' }}>No products found</td></tr>}
+                        </tbody>
+                    </table>
+                </div>
+            )}
         </div>
     );
 };

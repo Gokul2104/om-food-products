@@ -60,19 +60,36 @@ async def list_products(
     low_stock: Optional[bool] = Query(None),
     active_only: bool = Query(True)
 ):
-    query = {}
-    products = await Product.find_all().to_list()
-    result = []
-    for p in products:
-        if active_only and not p.is_active:
-            continue
-        if search and search.lower() not in p.name.lower() and search.lower() not in p.p_id.lower():
-            continue
-        if category_id and p.category_id != category_id:
-            continue
-        if low_stock is True and p.current_stock > p.min_stock_alert:
-            continue
-        result.append(prod_out(p))
+    # Build query
+    filters = []
+    if active_only:
+        filters.append(Product.is_active == True)
+    if category_id:
+        filters.append(Product.category_id == category_id)
+    if search:
+        # Case-insensitive search on name or p_id
+        filters.append({
+            "$or": [
+                {"name": {"$regex": search, "$options": "i"}},
+                {"p_id": {"$regex": search, "$options": "i"}}
+            ]
+        })
+    
+    # Execute query
+    if filters:
+        # Handle the mixing of Beanie expressions and raw MongoDB dicts
+        query = Product.find(*filters)
+    else:
+        query = Product.find_all()
+        
+    products = await query.to_list()
+    
+    # Mapping to output format
+    result = [prod_out(p) for p in products]
+    
+    # Handle low_stock filter if requested (complex comparison against min_stock_alert)
+    if low_stock is True:
+        result = [r for r in result if r["is_low_stock"]]
     
     # Sort: Low stock products first, then by current stock level
     result.sort(key=lambda x: (not x["is_low_stock"], x["current_stock"]))

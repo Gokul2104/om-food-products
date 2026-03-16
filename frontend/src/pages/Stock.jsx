@@ -12,19 +12,30 @@ const Stock = () => {
 
     const [showAdjustForm, setShowAdjustForm] = useState(false);
     const [adjustData, setAdjustData] = useState({ new_quantity: '', notes: '' });
+    
+    const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState('');
 
     const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-    const fetchStock = async () => {
+    const fetchStock = async (query = '') => {
+        setLoading(true);
         try {
-            const res = await api.get('/stock');
+            const res = await api.get(`/stock?search=${query}`);
             setStock(res.data);
         } catch (err) {
             console.error(err);
+        } finally {
+            setLoading(false);
         }
     };
 
-    useEffect(() => { fetchStock(); }, []);
+    useEffect(() => { 
+        const delaySearch = setTimeout(() => {
+            fetchStock(search);
+        }, 300);
+        return () => clearTimeout(delaySearch);
+    }, [search]);
 
     const viewHistory = async (productId) => {
         try {
@@ -76,40 +87,66 @@ const Stock = () => {
 
             {/* Left: Overall Stock View */}
             <div style={{ flex: 2, display: 'flex', flexDirection: 'column' }}>
-                <h1 className="page-title mb-4">Stock Ledger</h1>
-                <div className="table-container" style={{ flex: 1 }}>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Product</th>
-                                <th>Current Stock</th>
-                                <th>Status</th>
-                                <th style={{ textAlign: 'right' }}>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {stock.map(p => (
-                                <tr key={p.id} className={selectedProduct?.id === p.id ? 'active-row' : ''} style={selectedProduct?.id === p.id ? { backgroundColor: 'var(--primary-light)' } : {}}>
-                                    <td>
-                                        <div style={{ fontWeight: 500, color: 'white' }}>{p.name}</div>
-                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{p.p_id} • {p.category_name || 'No Category'}</div>
-                                    </td>
-                                    <td style={{ fontSize: '1.1rem', fontWeight: 600 }}>{p.current_stock} <span style={{ fontSize: '0.8rem', fontWeight: 400, color: 'var(--text-muted)' }}>{p.unit}</span></td>
-                                    <td>
-                                        {p.is_low_stock ?
-                                            <span className="badge badge-danger"><AlertCircle size={12} style={{ marginRight: 4 }} /> Low Stock</span> :
-                                            <span className="badge badge-success">Sufficient</span>}
-                                    </td>
-                                    <td style={{ textAlign: 'right' }}>
-                                        <button className="btn btn-outline" style={{ padding: '0.4rem 0.8rem' }} onClick={() => viewHistory(p.id)}>
-                                            <History size={16} /> History
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                <div className="page-header">
+                    <h1 className="page-title">Stock Ledger</h1>
+                    <div style={{ width: '300px' }}>
+                        <input 
+                            type="text" 
+                            placeholder="Search products..." 
+                            style={{ width: '100%' }}
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                        />
+                    </div>
                 </div>
+
+                {loading ? (
+                    <div className="loading-overlay">
+                        <div className="spinner"></div>
+                        <p>Loading stock data...</p>
+                    </div>
+                ) : (
+                    <div className="table-container" style={{ flex: 1 }}>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Current Stock</th>
+                                    <th>Status</th>
+                                    <th style={{ textAlign: 'right' }}>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {stock.map(p => (
+                                    <tr key={p.id} className={selectedProduct?.id === p.id ? 'active-row' : ''} style={selectedProduct?.id === p.id ? { backgroundColor: 'var(--primary-light)' } : {}}>
+                                        <td>
+                                            <div style={{ fontWeight: 500, color: 'white' }}>{p.name}</div>
+                                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{p.p_id} • {p.category_name || 'No Category'}</div>
+                                        </td>
+                                        <td style={{ fontSize: '1.1rem', fontWeight: 600 }}>{p.current_stock} <span style={{ fontSize: '0.8rem', fontWeight: 400, color: 'var(--text-muted)' }}>{p.unit}</span></td>
+                                        <td>
+                                            {p.is_low_stock ?
+                                                <span className="badge badge-danger"><AlertCircle size={12} style={{ marginRight: 4 }} /> Low Stock</span> :
+                                                <span className="badge badge-success">Sufficient</span>}
+                                        </td>
+                                        <td style={{ textAlign: 'right' }}>
+                                            <button className="btn btn-outline" style={{ padding: '0.4rem 0.8rem' }} onClick={() => viewHistory(p.id)}>
+                                                <History size={16} /> History
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {stock.length === 0 && (
+                                    <tr>
+                                        <td colSpan="4" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                                            No products found matching your search.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </div>
 
             {/* Right: Actions & History panel */}
