@@ -167,9 +167,9 @@ const Billing = () => {
     }
 
     return (
-        <div style={{ display: 'flex', gap: '2rem', height: 'calc(100vh - 120px)' }}>
+        <div className="billing-container">
             {/* POS Left: Products Grid */}
-            <div style={{ flex: 3, display: 'flex', flexDirection: 'column' }}>
+            <div className="billing-catalog">
                 <div className="form-group" style={{ position: 'relative' }}>
                     <Search size={20} style={{ position: 'absolute', top: 12, left: 12, color: 'var(--text-muted)' }} />
                     <input
@@ -187,7 +187,7 @@ const Billing = () => {
                         <p>Loading catalog...</p>
                     </div>
                 ) : (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem', overflowY: 'auto', paddingRight: '0.5rem', alignContent: 'start' }}>
+                    <div className="products-grid">
                         {filteredProducts.map(p => (
                             <div key={p.id} className="card" style={{ padding: '1rem', cursor: 'pointer', transition: 'transform 0.1s', userSelect: 'none' }} onClick={() => addToCart(p)} onMouseDown={e => e.currentTarget.style.transform = 'scale(0.97)'} onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}>
                                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>{p.p_id}</div>
@@ -204,7 +204,7 @@ const Billing = () => {
             </div>
 
             {/* POS Right: Cart Checkout */}
-            <div style={{ flex: 2, display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-surface)', borderRadius: 'var(--border-radius)', border: '1px solid var(--border-color)' }}>
+            <div className="billing-cart">
                 <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <ShoppingCart className="text-primary" />
                     <h2 style={{ margin: 0, fontSize: '1.25rem' }}>Current Bill</h2>
@@ -221,9 +221,9 @@ const Billing = () => {
                     </div>
                 </div>
 
-                <div style={{ flex: 1, overflowY: 'auto', padding: '1rem' }}>
+                <div className="cart-items-container">
                     {cart.map(item => (
-                        <div key={item.product_id} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '1rem', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', marginBottom: '1rem', backgroundColor: 'rgba(0,0,0,0.2)' }}>
+                        <div key={item.product_id} className="cart-item">
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                 <strong style={{ fontSize: '1.05rem' }}>{item.name}</strong>
                                 <button style={{ color: 'var(--danger)', background: 'none' }} onClick={() => removeFromCart(item.product_id)}><Trash2 size={16} /></button>
