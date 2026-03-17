@@ -8,6 +8,11 @@ const InvoiceLayout = React.forwardRef(({ invoice }, ref) => {
         <div className="invoice-print-container" ref={ref} style={{ backgroundColor: 'white', color: 'black', padding: '2rem', width: '100%', maxWidth: '400px', margin: '0 auto', fontFamily: 'monospace' }}>
             <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
                 <h2 style={{ color: 'black', margin: 0, textTransform: 'uppercase' }}>OM Food Products</h2>
+                <div style={{ fontSize: '0.8rem', color: '#333', marginTop: '0.5rem' }}>
+                    1/70, Perumal Kovil Street,<br />
+                    Nanmangalam, Chennai – 600129<br />
+                    Mobile: 9444903070
+                </div>
                 <p style={{ color: '#666', fontSize: '0.9rem', margin: '0.25rem 0' }}>Invoice</p>
                 <p style={{ fontSize: '0.85rem', margin: '0.25rem 0' }}>{formatDateTimeIST(invoice.created_at)}</p>
                 <p style={{ fontWeight: 'bold', marginTop: '0.5rem', fontSize: '1.1rem' }}>{invoice.invoice_number}</p>
