@@ -1,5 +1,5 @@
 from beanie import Document
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime
 from enum import Enum
@@ -24,7 +24,7 @@ class Return(Document):
     processed_by: str       # user id
     processed_by_name: str  # snapshot
     notes: Optional[str] = None
-    created_at: datetime = datetime.utcnow()
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Settings:
         name = "returns"

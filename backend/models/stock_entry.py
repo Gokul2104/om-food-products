@@ -19,7 +19,7 @@ class StockEntry(Document):
     notes: Optional[str] = None
     performed_by: str   # user id
     performed_by_name: str  # snapshot
-    created_at: datetime = datetime.utcnow()
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Settings:
         name = "stock_entries"

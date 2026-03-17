@@ -19,9 +19,12 @@ async def daily_report(
     if date:
         target = datetime.fromisoformat(date)
     else:
-        target = datetime.utcnow()
+        # Today in IST
+        target = datetime.utcnow() + timedelta(hours=5, minutes=30)
 
-    day_start = target.replace(hour=0, minute=0, second=0, microsecond=0)
+    # Define IST day start (00:00:00) and convert to UTC
+    ist_day_start = target.replace(hour=0, minute=0, second=0, microsecond=0)
+    day_start = ist_day_start - timedelta(hours=5, minutes=30)
     day_end = day_start + timedelta(days=1)
 
     invoices = await Invoice.find(
@@ -87,15 +90,23 @@ async def daily_report(
 
 @router.get("/monthly")
 async def monthly_report(
-    year: int = Query(default=datetime.utcnow().year),
-    month: int = Query(default=datetime.utcnow().month),
+    year: Optional[int] = Query(None),
+    month: Optional[int] = Query(None),
     _=Depends(get_current_user)
 ):
-    month_start = datetime(year, month, 1)
+    now_ist = datetime.utcnow() + timedelta(hours=5, minutes=30)
+    year = year or now_ist.year
+    month = month or now_ist.month
+    
+    # Define IST month boundaries and convert to UTC
+    ist_month_start = datetime(year, month, 1)
+    month_start = ist_month_start - timedelta(hours=5, minutes=30)
+    
     if month == 12:
-        month_end = datetime(year + 1, 1, 1)
+        ist_month_end = datetime(year + 1, 1, 1)
     else:
-        month_end = datetime(year, month + 1, 1)
+        ist_month_end = datetime(year, month + 1, 1)
+    month_end = ist_month_end - timedelta(hours=5, minutes=30)
 
     invoices = await Invoice.find(
         Invoice.created_at >= month_start,
@@ -220,7 +231,10 @@ async def top_products(
             product_sales[pid]["revenue"] += item.line_total
 
     sorted_products = sorted(product_sales.items(), key=lambda x: x[1]["revenue"], reverse=True)
+    # Limit results
+    final_products = sorted_products[:limit]
+    
     return [
         {"product_id": k, "name": v["name"], "qty_sold": v["qty"], "revenue": round(v["revenue"], 2)}
-        for k, v in sorted_products[:limit]
+        for k, v in final_products
     ]

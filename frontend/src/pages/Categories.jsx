@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2 } from 'lucide-react';
 import api from '../api';
+import { formatDateIST } from '../utils/dateUtils';
 
 const Categories = () => {
     const [categories, setCategories] = useState([]);
@@ -119,7 +120,7 @@ const Categories = () => {
                             <tr key={cat.id}>
                                 <td style={{ fontWeight: 500, color: 'white' }}>{cat.name}</td>
                                 <td>{cat.description || '-'}</td>
-                                <td>{new Date(cat.created_at).toLocaleDateString()}</td>
+                                <td>{formatDateIST(cat.created_at)}</td>
                                 {user.role === 'Admin' && (
                                     <td style={{ textAlign: 'right' }}>
                                         <button className="btn btn-outline" style={{ padding: '0.4rem', marginRight: '0.5rem' }} onClick={() => handleEdit(cat)}>

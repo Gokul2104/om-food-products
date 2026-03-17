@@ -145,7 +145,7 @@ const Returns = () => {
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem' }}>
                             <div>
                                 <h3 style={{ margin: 0, color: 'white' }}>{invoice.invoice_number}</h3>
-                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{new Date(invoice.created_at).toLocaleString()}</div>
+                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{formatDateTimeIST(invoice.created_at)}</div>
                             </div>
                             <div style={{ textAlign: 'right' }}>
                                 <span className="badge badge-primary">{invoice.payment_method}</span>

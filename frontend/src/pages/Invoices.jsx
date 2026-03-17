@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { formatDateIST } from '../utils/dateUtils';
 import api from '../api';
 import { Search, Filter, Eye, Printer, AlertCircle, X } from 'lucide-react';
 import { useReactToPrint } from 'react-to-print';
@@ -34,7 +35,7 @@ const Invoices = () => {
     };
 
     const handlePrint = useReactToPrint({
-        content: () => printRef.current,
+        contentRef: printRef,
     });
 
     const openInvoiceDetail = (inv) => {

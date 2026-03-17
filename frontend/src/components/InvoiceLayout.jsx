@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatDateTimeIST } from '../utils/dateUtils';
 
 const InvoiceLayout = React.forwardRef(({ invoice }, ref) => {
     if (!invoice) return null;
@@ -7,8 +8,8 @@ const InvoiceLayout = React.forwardRef(({ invoice }, ref) => {
         <div className="invoice-print-container" ref={ref} style={{ backgroundColor: 'white', color: 'black', padding: '2rem', width: '100%', maxWidth: '400px', margin: '0 auto', fontFamily: 'monospace' }}>
             <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
                 <h2 style={{ color: 'black', margin: 0, textTransform: 'uppercase' }}>OM Food Products</h2>
-                <p style={{ color: '#666', fontSize: '0.9rem', margin: '0.25rem 0' }}>Tax Invoice</p>
-                <p style={{ fontSize: '0.85rem', margin: '0.25rem 0' }}>{new Date(invoice.created_at).toLocaleString()}</p>
+                <p style={{ color: '#666', fontSize: '0.9rem', margin: '0.25rem 0' }}>Invoice</p>
+                <p style={{ fontSize: '0.85rem', margin: '0.25rem 0' }}>{formatDateTimeIST(invoice.created_at)}</p>
                 <p style={{ fontWeight: 'bold', marginTop: '0.5rem', fontSize: '1.1rem' }}>{invoice.invoice_number}</p>
             </div>
 

@@ -217,7 +217,7 @@ const Stock = () => {
                                         <span className={`badge ${h.type === 'IN' || h.type === 'RETURN' ? 'badge-success' : h.type === 'OUT' ? 'badge-info' : 'badge-warning'}`} style={{ fontSize: '0.65rem' }}>
                                             {h.type}
                                         </span>
-                                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{new Date(h.created_at).toLocaleString()}</span>
+                                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{formatDateTimeIST(h.created_at)}</span>
                                     </div>
                                     <div style={{ fontSize: '0.85rem' }}>By {h.performed_by_name}</div>
                                     {h.notes && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '0.2rem' }}>"{h.notes}"</div>}

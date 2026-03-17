@@ -138,7 +138,7 @@ const Billing = () => {
     };
 
     const handlePrint = useReactToPrint({
-        content: () => printRef.current,
+        contentRef: printRef,
         onAfterPrint: () => setInvoice(null) // clear after print
     });
 

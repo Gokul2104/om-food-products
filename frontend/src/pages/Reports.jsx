@@ -53,7 +53,7 @@ const Reports = () => {
         if (viewState === 'daily') {
             csvContent += "Invoice,Customer,Amount,Payment Method,Time\n";
             data.invoices.forEach(inv => {
-                csvContent += `"${inv.invoice_number}","${inv.customer_name || 'Walk-in'}","${inv.grand_total}","${inv.payment_method}","${new Date(inv.created_at).toLocaleTimeString()}"\n`;
+                csvContent += `"${inv.invoice_number}","${inv.customer_name || 'Walk-in'}","${inv.grand_total}","${inv.payment_method}","${formatTimeIST(inv.created_at)}"\n`;
             });
         } else {
             csvContent += "Date,Sales,Invoices\n";

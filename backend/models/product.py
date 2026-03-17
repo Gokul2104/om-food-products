@@ -23,7 +23,7 @@ class Product(Document):
     min_stock_alert: int = 5
     current_stock: float = 0.0  # Denormalized fast-access stock count
     is_active: bool = True
-    created_at: datetime = datetime.utcnow()
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Settings:
         name = "products"
