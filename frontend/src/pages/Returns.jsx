@@ -257,7 +257,7 @@ const Returns = () => {
                                 <span className="badge badge-danger">₹{r.refund_amount}</span>
                             </div>
                             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
-                                {new Date(r.created_at).toLocaleString()}
+                                {formatDateTimeIST(r.created_at)}
                             </div>
                             <div style={{ fontSize: '0.85rem' }}>
                                 {r.items.map((item, idx) => (

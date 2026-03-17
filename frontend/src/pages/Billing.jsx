@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, ShoppingCart, Plus, Minus, Trash2, Printer } from 'lucide-react';
+import { Search, ShoppingCart, Plus, Minus, Trash2, Printer, Download } from 'lucide-react';
 import { useReactToPrint } from 'react-to-print';
 import api from '../api';
 import InvoiceLayout from '../components/InvoiceLayout';
+import { downloadAsPDF } from '../utils/pdfUtils';
 
 const Billing = () => {
     const [products, setProducts] = useState([]);
@@ -156,6 +157,9 @@ const Billing = () => {
 
                 <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
                     <button className="btn btn-primary" onClick={handlePrint}><Printer size={18} /> Print Invoice</button>
+                    <button className="btn btn-secondary" onClick={() => downloadAsPDF(printRef, invoice.invoice_number)}>
+                        <Download size={18} /> Download PDF
+                    </button>
                     <button className="btn btn-outline" onClick={() => setInvoice(null)}>New Bill</button>
                 </div>
             </div>

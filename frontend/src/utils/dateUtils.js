@@ -32,3 +32,19 @@ export const formatDateTimeIST = (dateString) => {
         hour12: true
     });
 };
+
+/**
+ * Formats a date string to IST (Indian Standard Time) time only
+ * @param {string} dateString - ISO date string
+ * @returns {string} - Formatted time
+ */
+export const formatTimeIST = (dateString) => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('en-IN', {
+        timeZone: 'Asia/Kolkata',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+    });
+};

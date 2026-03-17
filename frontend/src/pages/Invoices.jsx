@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { formatDateIST } from '../utils/dateUtils';
 import api from '../api';
-import { Search, Filter, Eye, Printer, AlertCircle, X } from 'lucide-react';
+import { Search, Filter, Eye, Printer, AlertCircle, X, Download } from 'lucide-react';
 import { useReactToPrint } from 'react-to-print';
 import InvoiceLayout from '../components/InvoiceLayout';
+import { downloadAsPDF } from '../utils/pdfUtils';
 
 const Invoices = () => {
     const [invoices, setInvoices] = useState([]);
@@ -11,11 +12,11 @@ const Invoices = () => {
     const [error, setError] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('');
-    
+
     // Modal state
     const [selectedInvoice, setSelectedInvoice] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    
+
     const printRef = useRef();
 
     useEffect(() => {
@@ -58,13 +59,13 @@ const Invoices = () => {
     };
 
     const filteredInvoices = invoices.filter(inv => {
-        const matchesSearch = 
+        const matchesSearch =
             inv.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (inv.customer_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
             (inv.customer_phone || '').includes(searchTerm);
-        
+
         const matchesStatus = filterStatus === '' || inv.payment_status === filterStatus;
-        
+
         return matchesSearch && matchesStatus;
     });
 
@@ -91,9 +92,9 @@ const Invoices = () => {
                     <div className="form-group" style={{ flex: 1, minWidth: '250px', marginBottom: 0 }}>
                         <div style={{ position: 'relative' }}>
                             <Search size={18} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                            <input 
-                                type="text" 
-                                placeholder="Search by number, customer, phone..." 
+                            <input
+                                type="text"
+                                placeholder="Search by number, customer, phone..."
                                 className="form-control"
                                 style={{ paddingLeft: '2.5rem' }}
                                 value={searchTerm}
@@ -102,8 +103,8 @@ const Invoices = () => {
                         </div>
                     </div>
                     <div className="form-group" style={{ minWidth: '200px', marginBottom: 0 }}>
-                        <select 
-                            className="form-control" 
+                        <select
+                            className="form-control"
                             value={filterStatus}
                             onChange={(e) => setFilterStatus(e.target.value)}
                         >
@@ -149,7 +150,7 @@ const Invoices = () => {
                                 filteredInvoices.map((inv) => (
                                     <tr key={inv.id}>
                                         <td style={{ fontWeight: 600 }}>{inv.invoice_number}</td>
-                                        <td>{new Date(inv.created_at).toLocaleDateString()}</td>
+                                        <td>{formatDateIST(inv.created_at)}</td>
                                         <td>
                                             <div>{inv.customer_name || 'Walking Customer'}</div>
                                             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{inv.customer_phone}</div>
@@ -166,19 +167,30 @@ const Invoices = () => {
                                         </td>
                                         <td>
                                             <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                <button 
-                                                    className="btn btn-secondary btn-sm" 
+                                                <button
+                                                    className="btn btn-secondary btn-sm"
                                                     title="View Detail"
                                                     onClick={() => openInvoiceDetail(inv)}
                                                 >
                                                     <Eye size={16} />
                                                 </button>
-                                                <button 
-                                                    className="btn btn-secondary btn-sm" 
+                                                <button
+                                                    className="btn btn-secondary btn-sm"
                                                     title="Print"
                                                     onClick={(e) => handleQuickPrint(e, inv)}
                                                 >
                                                     <Printer size={16} />
+                                                </button>
+                                                <button
+                                                    className="btn btn-secondary btn-sm"
+                                                    title="Download PDF"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedInvoice(inv);
+                                                        setTimeout(() => downloadAsPDF(printRef, inv.invoice_number), 100);
+                                                    }}
+                                                >
+                                                    <Download size={16} />
                                                 </button>
                                             </div>
                                         </td>
@@ -190,8 +202,8 @@ const Invoices = () => {
                 </div>
             </div>
 
-            {/* Hidden printable area for quick print */}
-            <div style={{ display: 'none' }}>
+            {/* Hidden printable area for quick print and PDF generation */}
+            <div style={{ position: 'absolute', top: '-9999px', left: '-9999px', width: '400px', backgroundColor: 'white' }}>
                 <InvoiceLayout ref={printRef} invoice={selectedInvoice} />
             </div>
 
@@ -210,6 +222,9 @@ const Invoices = () => {
                         </div>
                         <div className="modal-footer">
                             <button className="btn btn-secondary" onClick={closeInvoiceDetail}>Close</button>
+                            <button className="btn btn-secondary" onClick={() => downloadAsPDF(printRef, selectedInvoice.invoice_number)}>
+                                <Download size={18} /> Download PDF
+                            </button>
                             <button className="btn btn-primary" onClick={handlePrint}>
                                 <Printer size={18} /> Print
                             </button>
