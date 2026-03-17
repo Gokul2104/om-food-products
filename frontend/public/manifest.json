@@ -2,7 +2,7 @@
   "name": "Om Appalam",
   "short_name": "Om Appalam",
   "description": "Om Appalam - Food Products Management",
-  "start_url": "/",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ffffff",
