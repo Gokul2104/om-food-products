@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { PackagePlus, AlertCircle, History } from 'lucide-react';
 import api from '../api';
+import { formatDateTimeIST } from '../utils/dateUtils';
 
 const Stock = () => {
     const [stock, setStock] = useState([]);
