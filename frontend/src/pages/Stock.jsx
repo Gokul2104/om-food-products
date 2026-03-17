@@ -90,14 +90,59 @@ const Stock = () => {
             <div style={{ flex: 2, display: 'flex', flexDirection: 'column' }}>
                 <div className="page-header">
                     <h1 className="page-title">Stock Ledger</h1>
-                    <div style={{ width: '300px' }}>
-                        <input 
-                            type="text" 
-                            placeholder="Search products..." 
-                            style={{ width: '100%' }}
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                        />
+                    <div style={{ display: 'flex', gap: '1rem' }}>
+                        {user.role === 'Admin' && (
+                            <>
+                                <input
+                                    type="file"
+                                    id="bulk-upload-input"
+                                    accept=".csv"
+                                    style={{ display: 'none' }}
+                                    onChange={async (e) => {
+                                        const file = e.target.files[0];
+                                        if (!file) return;
+                                        
+                                        const formData = new FormData();
+                                        formData.append('file', file);
+                                        
+                                        setLoading(true);
+                                        try {
+                                            const res = await api.post('/stock/bulk-upload', formData, {
+                                                headers: { 'Content-Type': 'multipart/form-data' }
+                                            });
+                                            const { created_products, updated_stock, created_categories, errors } = res.data;
+                                            
+                                            let msg = `Upload Complete!\n- ${created_products} New Products\n- ${updated_stock} Stock Updates\n- ${created_categories} New Categories`;
+                                            if (errors.length > 0) {
+                                                msg += `\n\nErrors (${errors.length}):\n` + errors.slice(0, 5).join('\n');
+                                                if (errors.length > 5) msg += '\n...and more';
+                                                alert(msg);
+                                            } else {
+                                                alert(msg);
+                                            }
+                                            fetchStock();
+                                        } catch (err) {
+                                            alert(err.response?.data?.detail || 'Error uploading file');
+                                        } finally {
+                                            setLoading(false);
+                                            e.target.value = ''; // Reset input
+                                        }
+                                    }}
+                                />
+                                <button className="btn btn-outline" onClick={() => document.getElementById('bulk-upload-input').click()}>
+                                    <PackagePlus size={16} /> Bulk Upload CSV
+                                </button>
+                            </>
+                        )}
+                        <div style={{ width: '300px' }}>
+                            <input 
+                                type="text" 
+                                placeholder="Search products..." 
+                                style={{ width: '100%' }}
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
+                            />
+                        </div>
                     </div>
                 </div>
 
