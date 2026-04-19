@@ -6,7 +6,7 @@ from models.product import Product
 from models.stock_entry import StockEntry, StockEntryType
 from models.user import User, UserRole
 from core.security import require_roles, get_current_user
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 
 router = APIRouter(prefix="/api/invoices", tags=["Invoices"])
 
@@ -26,9 +26,10 @@ class InvoiceCreate(BaseModel):
     paid_amount: Optional[float] = None
 
 async def generate_invoice_number() -> str:
-    today = datetime.utcnow().strftime("%Y%m%d")
+    now_utc = datetime.now(timezone.utc)
+    today = now_utc.strftime("%Y%m%d")
     count = await Invoice.find(
-        Invoice.created_at >= datetime(datetime.utcnow().year, datetime.utcnow().month, datetime.utcnow().day)
+        Invoice.created_at >= datetime(now_utc.year, now_utc.month, now_utc.day, tzinfo=timezone.utc)
     ).count()
     return f"INV-{today}-{count + 1:04d}"
 

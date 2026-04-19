@@ -40,11 +40,11 @@ const Reports = () => {
 
     if (data) {
         if (viewState === 'daily') {
-            barData = Object.entries(data.hourly_sales).map(([k, v]) => ({ name: k, sales: v }));
+            barData = Object.entries(data.hourly_sales || {}).map(([k, v]) => ({ name: k, sales: v }));
         } else {
-            barData = Object.entries(data.daily_breakdown).map(([k, v]) => ({ name: k.split('-')[2], sales: v.sales }));
+            barData = Object.entries(data.daily_breakdown || {}).map(([k, v]) => ({ name: k.split('-')[2], sales: v.sales }));
         }
-        pieData = Object.entries(data.payment_breakdown).map(([k, v]) => ({ name: k, value: v }));
+        pieData = Object.entries(data.payment_breakdown || {}).map(([k, v]) => ({ name: k, value: v }));
     }
 
     const exportCSV = () => {
@@ -58,7 +58,7 @@ const Reports = () => {
             });
         } else {
             csvContent += "Date,Sales,Invoices\n";
-            Object.entries(data.daily_breakdown).forEach(([k, v]) => {
+            Object.entries(data.daily_breakdown || {}).forEach(([k, v]) => {
                 csvContent += `"${k}","${v.sales}","${v.count}"\n`;
             });
         }

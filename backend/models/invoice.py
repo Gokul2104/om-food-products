@@ -1,7 +1,7 @@
 from beanie import Document
 from pydantic import BaseModel, Field
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 
 class PaymentMethod(str, Enum):
@@ -37,7 +37,7 @@ class Invoice(Document):
     paid_amount: float
     created_by: str       # user id
     created_by_name: str  # snapshot
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     class Settings:
         name = "invoices"
