@@ -33,6 +33,14 @@ async def generate_invoice_number() -> str:
     ).count()
     return f"INV-{today}-{count + 1:04d}"
 
+def ensure_utc(dt: datetime) -> datetime:
+    """Ensure datetime is timezone-aware UTC. Old records stored as naive UTC will be tagged."""
+    if dt is None:
+        return dt
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
+
 def invoice_out(inv: Invoice):
     return {
         "id": str(inv.id),
@@ -48,7 +56,7 @@ def invoice_out(inv: Invoice):
         "payment_status": inv.payment_status,
         "paid_amount": inv.paid_amount,
         "created_by_name": inv.created_by_name,
-        "created_at": inv.created_at
+        "created_at": ensure_utc(inv.created_at)
     }
 
 @router.post("", dependencies=[Depends(biller_or_admin)], status_code=201)
