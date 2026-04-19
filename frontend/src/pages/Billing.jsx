@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, ShoppingCart, Plus, Minus, Trash2, Printer, Download } from 'lucide-react';
+import { Search, ShoppingCart, Plus, Minus, Trash2, Printer, Download, QrCode } from 'lucide-react';
+import QRModal from '../components/QRModal';
 import { useReactToPrint } from 'react-to-print';
 import api from '../api';
 import InvoiceLayout from '../components/InvoiceLayout';
@@ -17,6 +18,7 @@ const Billing = () => {
 
     const [invoice, setInvoice] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [showQR, setShowQR] = useState(false);
     const printRef = useRef();
 
     useEffect(() => {
@@ -155,13 +157,22 @@ const Billing = () => {
                     <InvoiceLayout invoice={invoice} />
                 </div>
 
-                <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+                <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem', flexWrap: 'wrap', justifyContent: 'center' }}>
                     <button className="btn btn-primary" onClick={handlePrint}><Printer size={18} /> Print Invoice</button>
                     <button className="btn btn-secondary" onClick={() => downloadAsPDF(printRef, invoice.invoice_number)}>
                         <Download size={18} /> Download PDF
                     </button>
+                    <button
+                        className="btn btn-secondary"
+                        onClick={() => setShowQR(true)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                    >
+                        <QrCode size={18} /> Show QR
+                    </button>
                     <button className="btn btn-outline" onClick={() => setInvoice(null)}>New Bill</button>
                 </div>
+
+                {showQR && <QRModal onClose={() => setShowQR(false)} />}
             </div>
         );
     }

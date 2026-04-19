@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Package, Tags, Layers, Receipt, RotateCcw, BarChart3, Users, LogOut, Menu } from 'lucide-react';
+import { LayoutDashboard, Package, Tags, Layers, Receipt, RotateCcw, BarChart3, Users, LogOut, Menu, QrCode } from 'lucide-react';
+import QRModal from './QRModal';
 
 const MainLayout = () => {
     const navigate = useNavigate();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const [showQR, setShowQR] = useState(false);
 
     const handleLogout = () => {
         localStorage.removeItem('token');
@@ -95,7 +97,15 @@ const MainLayout = () => {
                     <div className="search-bar" style={{ flex: 1 }}>
                         {/* Global Search placeholder */}
                     </div>
-                    <div className="header-actions">
+                    <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <button
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => setShowQR(true)}
+                            title="Show UPI QR Code"
+                            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem' }}
+                        >
+                            <QrCode size={16} /> UPI QR
+                        </button>
                         <span className="badge badge-primary">{user.role}</span>
                     </div>
                 </header>
@@ -104,6 +114,8 @@ const MainLayout = () => {
                     <Outlet />
                 </div>
             </main>
+
+            {showQR && <QRModal onClose={() => setShowQR(false)} />}
         </div>
     );
 };

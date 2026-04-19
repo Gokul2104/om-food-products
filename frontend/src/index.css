@@ -619,6 +619,17 @@ tbody tr:hover {
   color: #fff;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+body.bright-mode {
+  filter: brightness(1.2);
+  transition: filter 0.3s ease;
+}
+
 /* Loading Spinner */
 .loading-overlay {
   display: flex;
