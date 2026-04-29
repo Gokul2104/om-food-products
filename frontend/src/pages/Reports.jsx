@@ -14,8 +14,10 @@ const Reports = () => {
 
     const [data, setData] = useState(null);
     const [summary, setSummary] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     const fetchData = async () => {
+        setLoading(true);
         try {
             const summaryRes = await api.get('/reports/stock-summary');
             setSummary(summaryRes.data);
@@ -31,6 +33,8 @@ const Reports = () => {
             }
         } catch (err) {
             console.error(err);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -78,7 +82,22 @@ const Reports = () => {
     const locationLabel = locationFilter === 'All' ? '' : ` — ${locationFilter === 'Shop' ? '🏪 Shop' : '🏕️ Stall'}`;
 
     return (
-        <div>
+        <div style={{ position: 'relative', minHeight: '400px' }}>
+            {loading && (
+                <div style={{
+                    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(15, 17, 21, 0.7)',
+                    backdropFilter: 'blur(4px)',
+                    display: 'flex', flexDirection: 'column',
+                    alignItems: 'center', justifyContent: 'center',
+                    zIndex: 50, borderRadius: 'var(--border-radius)',
+                    gap: '1rem'
+                }}>
+                    <div className="spinner" style={{ width: '48px', height: '48px' }}></div>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>Loading report...</p>
+                </div>
+            )}
+
             <div className="page-header">
                 <h1 className="page-title">Sales Reports{locationLabel}</h1>
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
