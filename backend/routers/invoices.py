@@ -27,6 +27,16 @@ class InvoiceCreate(BaseModel):
     paid_amount: Optional[float] = None
     related_to: RelatedTo = RelatedTo.shop
 
+
+class InvoiceUpdate(BaseModel):
+    customer_name: Optional[str] = None
+    customer_phone: Optional[str] = None
+    payment_method: Optional[PaymentMethod] = None
+    payment_status: Optional[PaymentStatus] = None
+    paid_amount: Optional[float] = None
+    related_to: Optional[RelatedTo] = None
+    invoice_date: Optional[str] = None  # YYYY-MM-DD string
+
 async def generate_invoice_number() -> str:
     now_utc = datetime.now(timezone.utc)
     today = now_utc.strftime("%Y%m%d")
@@ -179,3 +189,40 @@ async def get_invoice(invoice_id: str):
     if not inv:
         raise HTTPException(status_code=404, detail="Invoice not found")
     return invoice_out(inv)
+
+
+@router.put("/{invoice_id}", dependencies=[Depends(biller_or_admin)])
+async def update_invoice(invoice_id: str, data: InvoiceUpdate):
+    inv = await Invoice.get(invoice_id)
+    if not inv:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+
+    if data.customer_name is not None:
+        inv.customer_name = data.customer_name
+    if data.customer_phone is not None:
+        inv.customer_phone = data.customer_phone
+    if data.payment_method is not None:
+        inv.payment_method = data.payment_method
+    if data.related_to is not None:
+        inv.related_to = data.related_to
+    if data.paid_amount is not None:
+        inv.paid_amount = data.paid_amount
+        # Auto-recalculate payment status
+        if inv.paid_amount >= inv.grand_total:
+            inv.payment_status = PaymentStatus.paid
+        elif inv.paid_amount > 0:
+            inv.payment_status = PaymentStatus.partial
+        else:
+            inv.payment_status = PaymentStatus.pending
+    if data.payment_status is not None and data.paid_amount is None:
+        inv.payment_status = data.payment_status
+    if data.invoice_date is not None:
+        from datetime import timedelta
+        # Parse YYYY-MM-DD as IST midnight, convert to UTC
+        d = datetime.fromisoformat(data.invoice_date).replace(hour=0, minute=0, second=0, microsecond=0)
+        inv.created_at = d - timedelta(hours=5, minutes=30)
+
+    await inv.save()
+    return invoice_out(inv)
+
+

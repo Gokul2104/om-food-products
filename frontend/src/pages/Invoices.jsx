@@ -1,21 +1,30 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { formatDateIST } from '../utils/dateUtils';
 import api from '../api';
-import { Search, Filter, Eye, Printer, AlertCircle, X, Download } from 'lucide-react';
+import { Search, Filter, Eye, Printer, AlertCircle, X, Download, Pencil } from 'lucide-react';
 import { useReactToPrint } from 'react-to-print';
 import InvoiceLayout from '../components/InvoiceLayout';
 import { downloadAsPDF } from '../utils/pdfUtils';
 
 const Invoices = () => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const isAdminOrBiller = user.role === 'Admin' || user.role === 'Biller';
+
     const [invoices, setInvoices] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('');
 
-    // Modal state
+    // View modal state
     const [selectedInvoice, setSelectedInvoice] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+
+    // Edit modal state
+    const [isEditOpen, setIsEditOpen] = useState(false);
+    const [editForm, setEditForm] = useState({});
+    const [editSaving, setEditSaving] = useState(false);
+    const [editError, setEditError] = useState('');
 
     const printRef = useRef();
 
@@ -52,10 +61,53 @@ const Invoices = () => {
     const handleQuickPrint = (e, inv) => {
         e.stopPropagation();
         setSelectedInvoice(inv);
-        // We need a small delay to ensure the component is rendered with the new inv before printing
         setTimeout(() => {
             handlePrint();
         }, 100);
+    };
+
+    // --- Edit handlers ---
+    const openEdit = (e, inv) => {
+        e.stopPropagation();
+        setEditForm({
+            customer_name: inv.customer_name || '',
+            customer_phone: inv.customer_phone || '',
+            payment_method: inv.payment_method || 'Cash',
+            payment_status: inv.payment_status || 'Paid',
+            paid_amount: inv.paid_amount ?? '',
+            related_to: inv.related_to || 'Shop',
+            invoice_date: new Date(inv.created_at).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }),
+        });
+        setSelectedInvoice(inv);
+        setEditError('');
+        setIsEditOpen(true);
+    };
+
+    const closeEdit = () => {
+        setIsEditOpen(false);
+        setEditError('');
+    };
+
+    const handleEditSave = async () => {
+        setEditSaving(true);
+        setEditError('');
+        try {
+            const payload = {
+                customer_name: editForm.customer_name || null,
+                customer_phone: editForm.customer_phone || null,
+                payment_method: editForm.payment_method,
+                paid_amount: editForm.paid_amount !== '' ? parseFloat(editForm.paid_amount) : null,
+                related_to: editForm.related_to,
+                invoice_date: editForm.invoice_date || null,
+            };
+            await api.put(`/invoices/${selectedInvoice.id}`, payload);
+            closeEdit();
+            fetchInvoices();
+        } catch (err) {
+            setEditError(err.response?.data?.detail || 'Failed to update invoice');
+        } finally {
+            setEditSaving(false);
+        }
     };
 
     const filteredInvoices = invoices.filter(inv => {
@@ -134,6 +186,7 @@ const Invoices = () => {
                                 <th>Invoice #</th>
                                 <th>Date</th>
                                 <th>Customer</th>
+                                <th>Location</th>
                                 <th>Bill Amount</th>
                                 <th>Paid</th>
                                 <th>Balance (Credit)</th>
@@ -143,9 +196,9 @@ const Invoices = () => {
                         </thead>
                         <tbody>
                             {loading ? (
-                                <tr><td colSpan="8" style={{ textAlign: 'center', padding: '3rem' }}>Loading invoices...</td></tr>
+                                <tr><td colSpan="9" style={{ textAlign: 'center', padding: '3rem' }}>Loading invoices...</td></tr>
                             ) : filteredInvoices.length === 0 ? (
-                                <tr><td colSpan="8" style={{ textAlign: 'center', padding: '3rem' }}>No invoices found</td></tr>
+                                <tr><td colSpan="9" style={{ textAlign: 'center', padding: '3rem' }}>No invoices found</td></tr>
                             ) : (
                                 filteredInvoices.map((inv) => (
                                     <tr key={inv.id}>
@@ -154,6 +207,11 @@ const Invoices = () => {
                                         <td>
                                             <div>{inv.customer_name || 'Walking Customer'}</div>
                                             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{inv.customer_phone}</div>
+                                        </td>
+                                        <td>
+                                            <span className={`badge ${(inv.related_to || 'Shop') === 'Stall' ? 'badge-warning' : 'badge-success'}`} style={{ fontSize: '0.75rem' }}>
+                                                {(inv.related_to || 'Shop') === 'Shop' ? '🏪' : '🏕️'} {inv.related_to || 'Shop'}
+                                            </span>
                                         </td>
                                         <td>₹{inv.grand_total.toLocaleString()}</td>
                                         <td>₹{inv.paid_amount.toLocaleString()}</td>
@@ -174,6 +232,15 @@ const Invoices = () => {
                                                 >
                                                     <Eye size={16} />
                                                 </button>
+                                                {isAdminOrBiller && (
+                                                    <button
+                                                        className="btn btn-secondary btn-sm"
+                                                        title="Edit Invoice"
+                                                        onClick={(e) => openEdit(e, inv)}
+                                                    >
+                                                        <Pencil size={16} />
+                                                    </button>
+                                                )}
                                                 <button
                                                     className="btn btn-secondary btn-sm"
                                                     title="Print"
@@ -227,6 +294,125 @@ const Invoices = () => {
                             </button>
                             <button className="btn btn-primary" onClick={handlePrint}>
                                 <Printer size={18} /> Print
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Invoice Modal */}
+            {isEditOpen && selectedInvoice && (
+                <div className="modal-overlay" onClick={closeEdit}>
+                    <div className="modal-content fadeIn" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+                        <div className="modal-header">
+                            <h3 style={{ margin: 0 }}>Edit Invoice — {selectedInvoice.invoice_number}</h3>
+                            <button className="close-btn" onClick={closeEdit}><X size={22} /></button>
+                        </div>
+                        <div className="modal-body">
+                            {editError && (
+                                <div className="alert alert-error" style={{ marginBottom: '1rem' }}>
+                                    <AlertCircle size={16} /> {editError}
+                                </div>
+                            )}
+
+                            <div className="form-group">
+                                <label className="form-label">Customer Name</label>
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    placeholder="Walking Customer"
+                                    value={editForm.customer_name}
+                                    onChange={e => setEditForm(f => ({ ...f, customer_name: e.target.value }))}
+                                />
+                            </div>
+
+                            <div className="grid-2">
+                                <div className="form-group">
+                                    <label className="form-label">Customer Phone</label>
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        placeholder="Phone number"
+                                        value={editForm.customer_phone}
+                                        onChange={e => setEditForm(f => ({ ...f, customer_phone: e.target.value }))}
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Invoice Date</label>
+                                    <input
+                                        type="date"
+                                        className="form-control"
+                                        value={editForm.invoice_date}
+                                        onChange={e => setEditForm(f => ({ ...f, invoice_date: e.target.value }))}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid-2">
+                                <div className="form-group">
+                                    <label className="form-label">Payment Method</label>
+                                    <select
+                                        className="form-control"
+                                        value={editForm.payment_method}
+                                        onChange={e => setEditForm(f => ({ ...f, payment_method: e.target.value }))}
+                                    >
+                                        <option value="Cash">Cash</option>
+                                        <option value="UPI">UPI</option>
+                                        <option value="Credit">Credit</option>
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Paid Amount (₹)</label>
+                                    <input
+                                        type="number"
+                                        className="form-control"
+                                        min="0"
+                                        step="0.01"
+                                        placeholder={selectedInvoice.grand_total}
+                                        value={editForm.paid_amount}
+                                        onChange={e => setEditForm(f => ({ ...f, paid_amount: e.target.value }))}
+                                    />
+                                    <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                                        Bill total: ₹{selectedInvoice.grand_total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                    </small>
+                                </div>
+                            </div>
+
+                            <div className="form-group">
+                                <label className="form-label">Location</label>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <button
+                                        className={`btn ${editForm.related_to === 'Shop' ? 'btn-primary' : 'btn-secondary'}`}
+                                        style={{ flex: 1 }}
+                                        onClick={() => setEditForm(f => ({ ...f, related_to: 'Shop' }))}
+                                    >
+                                        🏪 Shop
+                                    </button>
+                                    <button
+                                        className={`btn ${editForm.related_to === 'Stall' ? 'btn-primary' : 'btn-secondary'}`}
+                                        style={{ flex: 1 }}
+                                        onClick={() => setEditForm(f => ({ ...f, related_to: 'Stall' }))}
+                                    >
+                                        🏕️ Stall
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Items (read-only summary) */}
+                            <div style={{ marginTop: '0.5rem', padding: '1rem', backgroundColor: 'var(--bg-elevated, #f8f9fa)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                                <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Items (read-only)</h4>
+                                {selectedInvoice.items.map((item, idx) => (
+                                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.3rem 0', fontSize: '0.85rem', borderBottom: idx < selectedInvoice.items.length - 1 ? '1px solid var(--border-color)' : 'none' }}>
+                                        <span>{item.product_name} × {item.quantity}</span>
+                                        <span style={{ fontWeight: 600 }}>₹{item.line_total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button className="btn btn-secondary" onClick={closeEdit}>Cancel</button>
+                            <button className="btn btn-primary" onClick={handleEditSave} disabled={editSaving}>
+                                {editSaving ? 'Saving...' : 'Save Changes'}
                             </button>
                         </div>
                     </div>
