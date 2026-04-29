@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import BaseModel
 from typing import List, Optional
 from models.invoice import Invoice, InvoiceItem, PaymentMethod, PaymentStatus
+from models.expense import RelatedTo
 from models.product import Product
 from models.stock_entry import StockEntry, StockEntryType
 from models.user import User, UserRole
@@ -24,6 +25,7 @@ class InvoiceCreate(BaseModel):
     payment_method: PaymentMethod = PaymentMethod.cash
     payment_status: PaymentStatus = PaymentStatus.paid
     paid_amount: Optional[float] = None
+    related_to: RelatedTo = RelatedTo.shop
 
 async def generate_invoice_number() -> str:
     now_utc = datetime.now(timezone.utc)
@@ -55,6 +57,7 @@ def invoice_out(inv: Invoice):
         "payment_method": inv.payment_method,
         "payment_status": inv.payment_status,
         "paid_amount": inv.paid_amount,
+        "related_to": getattr(inv, 'related_to', None) or "Shop",
         "created_by_name": inv.created_by_name,
         "created_at": ensure_utc(inv.created_at)
     }
@@ -136,6 +139,7 @@ async def create_invoice(data: InvoiceCreate, current_user: User = Depends(get_c
         payment_method=data.payment_method,
         payment_status=actual_status,
         paid_amount=paid_amount,
+        related_to=data.related_to,
         created_by=str(current_user.id),
         created_by_name=current_user.name,
     )

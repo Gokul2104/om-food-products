@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
 import { formatDateIST, formatDateTimeIST } from '../utils/dateUtils';
-import { Plus, Pencil, Trash2, AlertCircle, X, IndianRupee } from 'lucide-react';
+import { Plus, Pencil, Trash2, AlertCircle, X, IndianRupee, Store, MapPin } from 'lucide-react';
 
 const DEFAULT_CATEGORIES = [
     "Rent", "EB Bill", "Water Bill", "Internet", "Salary",
@@ -11,7 +11,9 @@ const DEFAULT_CATEGORIES = [
 
 const today = () => new Date().toISOString().split('T')[0];
 
-const emptyForm = { category: '', description: '', amount: '', expense_date: today() };
+const RELATED_OPTIONS = ['Shop', 'Stall', 'Both'];
+
+const emptyForm = { category: '', description: '', amount: '', expense_date: today(), related_to: 'Shop' };
 
 const Expenses = () => {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -25,6 +27,7 @@ const Expenses = () => {
     // Filter state
     const [filterMonth, setFilterMonth] = useState(new Date().getMonth() + 1);
     const [filterYear, setFilterYear] = useState(new Date().getFullYear());
+    const [filterLocation, setFilterLocation] = useState('All');
     const [showAll, setShowAll] = useState(false);
 
     // Modal state
@@ -43,7 +46,7 @@ const Expenses = () => {
 
     useEffect(() => {
         fetchExpenses();
-    }, [filterMonth, filterYear, showAll]);
+    }, [filterMonth, filterYear, showAll, filterLocation]);
 
     const fetchSuggestions = async () => {
         try {
@@ -57,6 +60,7 @@ const Expenses = () => {
             setLoading(true);
             setError('');
             const params = showAll ? {} : { month: filterMonth, year: filterYear };
+            if (filterLocation !== 'All') params.related_to = filterLocation;
             const res = await api.get('/expenses', { params });
             setExpenses(res.data);
         } catch (err) {
@@ -79,6 +83,7 @@ const Expenses = () => {
             category: e.category,
             description: e.description || '',
             amount: e.amount,
+            related_to: e.related_to || 'Shop',
             // Convert stored UTC ISO back to YYYY-MM-DD in IST for the date input
             expense_date: new Date(e.expense_date).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }),
         });
@@ -153,7 +158,7 @@ const Expenses = () => {
                             onChange={e => setShowAll(e.target.checked)}
                             style={{ width: '16px', height: '16px' }}
                         />
-                        Show all time
+                        Show all
                     </label>
 
                     {!showAll && (
@@ -182,6 +187,17 @@ const Expenses = () => {
                         </>
                     )}
 
+                    <select
+                        className="form-control"
+                        style={{ width: 'auto', minWidth: '120px' }}
+                        value={filterLocation}
+                        onChange={e => setFilterLocation(e.target.value)}
+                    >
+                        <option value="All">All Locations</option>
+                        <option value="Shop">🏪 Shop</option>
+                        <option value="Stall">🏕️ Stall</option>
+                    </select>
+
                     {/* Total */}
                     <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700, fontSize: '1.1rem', color: 'var(--danger, #ef4444)' }}>
                         <IndianRupee size={18} />
@@ -204,6 +220,7 @@ const Expenses = () => {
                             <tr>
                                 <th>Date</th>
                                 <th>Category</th>
+                                <th>Location</th>
                                 <th>Description</th>
                                 <th>Amount</th>
                                 <th>Added By</th>
@@ -212,15 +229,20 @@ const Expenses = () => {
                         </thead>
                         <tbody>
                             {loading ? (
-                                <tr><td colSpan="6" style={{ textAlign: 'center', padding: '3rem' }}>Loading...</td></tr>
+                                <tr><td colSpan="7" style={{ textAlign: 'center', padding: '3rem' }}>Loading...</td></tr>
                             ) : expenses.length === 0 ? (
-                                <tr><td colSpan="6" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No expenses found</td></tr>
+                                <tr><td colSpan="7" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No expenses found</td></tr>
                             ) : (
                                 expenses.map(e => (
                                     <tr key={e.id}>
                                         <td style={{ whiteSpace: 'nowrap' }}>{formatDateIST(e.expense_date)}</td>
                                         <td>
                                             <span className="badge badge-primary" style={{ fontSize: '0.8rem' }}>{e.category}</span>
+                                        </td>
+                                        <td>
+                                            <span className={`badge ${e.related_to === 'Stall' ? 'badge-warning' : e.related_to === 'Both' ? 'badge-secondary' : 'badge-success'}`} style={{ fontSize: '0.75rem' }}>
+                                                {e.related_to === 'Shop' ? '🏪' : e.related_to === 'Stall' ? '🏕️' : '📍'} {e.related_to || 'Shop'}
+                                            </span>
                                         </td>
                                         <td style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
                                             {e.description || '—'}
@@ -311,6 +333,21 @@ const Expenses = () => {
                                     value={form.expense_date}
                                     onChange={e => setForm(f => ({ ...f, expense_date: e.target.value }))}
                                 />
+                            </div>
+
+                            <div className="form-group">
+                                <label className="form-label">Related To *</label>
+                                <select
+                                    className="form-control"
+                                    value={form.related_to}
+                                    onChange={e => setForm(f => ({ ...f, related_to: e.target.value }))}
+                                >
+                                    {RELATED_OPTIONS.map(opt => (
+                                        <option key={opt} value={opt}>
+                                            {opt === 'Shop' ? '🏪 Shop' : opt === 'Stall' ? '🏕️ Stall' : '📍 Both'}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
                         </div>
                         <div className="modal-footer">

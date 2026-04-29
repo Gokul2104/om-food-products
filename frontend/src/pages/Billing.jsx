@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, ShoppingCart, Plus, Minus, Trash2, Printer, Download, QrCode } from 'lucide-react';
+import { Search, ShoppingCart, Plus, Minus, Trash2, Printer, Download, QrCode, Store } from 'lucide-react';
 import QRModal from '../components/QRModal';
 import { useReactToPrint } from 'react-to-print';
 import api from '../api';
@@ -15,6 +15,7 @@ const Billing = () => {
     const [paymentMethod, setPaymentMethod] = useState('Cash');
     const [paidAmount, setPaidAmount] = useState('');
     const [globalDiscount, setGlobalDiscount] = useState('');
+    const [relatedTo, setRelatedTo] = useState('Shop');
 
     const [invoice, setInvoice] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -108,7 +109,8 @@ const Billing = () => {
                 global_discount: discountVal,
                 payment_method: paymentMethod,
                 payment_status: 'Paid',
-                paid_amount: paidAmount !== '' ? parseFloat(paidAmount) : grandTotal
+                paid_amount: paidAmount !== '' ? parseFloat(paidAmount) : grandTotal,
+                related_to: relatedTo
             };
 
             const res = await api.post('/invoices', payload);
@@ -294,6 +296,26 @@ const Billing = () => {
                         <div className="form-group mb-0">
                             <label className="form-label" style={{ fontSize: '0.8rem' }}>Received (Partial)</label>
                             <input type="number" placeholder="Full amount if empty" style={{ width: '100%' }} value={paidAmount} onChange={e => setPaidAmount(e.target.value)} />
+                        </div>
+                    </div>
+
+                    <div style={{ marginBottom: '1.5rem' }}>
+                        <label className="form-label" style={{ fontSize: '0.8rem', marginBottom: '0.5rem', display: 'block' }}>Selling From</label>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <button
+                                className={`btn ${relatedTo === 'Shop' ? 'btn-primary' : 'btn-secondary'}`}
+                                style={{ flex: 1, padding: '0.6rem', fontSize: '0.9rem' }}
+                                onClick={() => setRelatedTo('Shop')}
+                            >
+                                🏪 Shop
+                            </button>
+                            <button
+                                className={`btn ${relatedTo === 'Stall' ? 'btn-primary' : 'btn-secondary'}`}
+                                style={{ flex: 1, padding: '0.6rem', fontSize: '0.9rem' }}
+                                onClick={() => setRelatedTo('Stall')}
+                            >
+                                🏕️ Stall
+                            </button>
                         </div>
                     </div>
 

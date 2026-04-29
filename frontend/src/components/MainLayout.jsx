@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Package, Tags, Layers, Receipt, RotateCcw, BarChart3, Users, LogOut, Menu, QrCode } from 'lucide-react';
+import { LayoutDashboard, Package, Tags, Layers, Receipt, RotateCcw, BarChart3, Users, LogOut, Menu, QrCode, Wallet } from 'lucide-react';
 import QRModal from './QRModal';
 
 const MainLayout = () => {
@@ -71,9 +71,14 @@ const MainLayout = () => {
                     </NavLink>
 
                     {user.role === 'Admin' && (
-                        <NavLink to="/users" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={closeSidebar}>
-                            <Users size={20} /> Users
-                        </NavLink>
+                        <>
+                            <NavLink to="/users" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={closeSidebar}>
+                                <Users size={20} /> Users
+                            </NavLink>
+                            <NavLink to="/expenses" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={closeSidebar}>
+                                <Wallet size={20} /> Expenses
+                            </NavLink>
+                        </>
                     )}
                 </nav>
 

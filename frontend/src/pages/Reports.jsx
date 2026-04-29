@@ -10,6 +10,7 @@ const Reports = () => {
     const [dateParam, setDateParam] = useState(new Date().toISOString().split('T')[0]);
     const [monthParam, setMonthParam] = useState(new Date().getMonth() + 1);
     const [yearParam, setYearParam] = useState(new Date().getFullYear());
+    const [locationFilter, setLocationFilter] = useState('All');
 
     const [data, setData] = useState(null);
     const [summary, setSummary] = useState(null);
@@ -19,11 +20,13 @@ const Reports = () => {
             const summaryRes = await api.get('/reports/stock-summary');
             setSummary(summaryRes.data);
 
+            const locationParam = locationFilter !== 'All' ? `&related_to=${locationFilter}` : '';
+
             if (viewState === 'daily') {
-                const res = await api.get(`/reports/daily?date=${dateParam}`);
+                const res = await api.get(`/reports/daily?date=${dateParam}${locationParam}`);
                 setData(res.data);
             } else {
-                const res = await api.get(`/reports/monthly?year=${yearParam}&month=${monthParam}`);
+                const res = await api.get(`/reports/monthly?year=${yearParam}&month=${monthParam}${locationParam}`);
                 setData(res.data);
             }
         } catch (err) {
@@ -33,7 +36,7 @@ const Reports = () => {
 
     useEffect(() => {
         fetchData();
-    }, [viewState, dateParam, monthParam, yearParam]);
+    }, [viewState, dateParam, monthParam, yearParam, locationFilter]);
 
     let barData = [];
     let pieData = [];
@@ -52,9 +55,9 @@ const Reports = () => {
         let csvContent = "data:text/csv;charset=utf-8,";
 
         if (viewState === 'daily') {
-            csvContent += "Invoice,Customer,Amount,Payment Method,Time\n";
+            csvContent += "Invoice,Customer,Amount,Payment Method,Location,Time\n";
             data.invoices.forEach(inv => {
-                csvContent += `"${inv.invoice_number}","${inv.customer_name || 'Walk-in'}","${inv.grand_total}","${inv.payment_method}","${formatTimeIST(inv.created_at)}"\n`;
+                csvContent += `"${inv.invoice_number}","${inv.customer_name || 'Walk-in'}","${inv.grand_total}","${inv.payment_method}","${inv.related_to || 'Shop'}","${formatTimeIST(inv.created_at)}"\n`;
             });
         } else {
             csvContent += "Date,Sales,Invoices\n";
@@ -72,11 +75,13 @@ const Reports = () => {
         document.body.removeChild(link);
     };
 
+    const locationLabel = locationFilter === 'All' ? '' : ` — ${locationFilter === 'Shop' ? '🏪 Shop' : '🏕️ Stall'}`;
+
     return (
         <div>
             <div className="page-header">
-                <h1 className="page-title">Sales Reports</h1>
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                <h1 className="page-title">Sales Reports{locationLabel}</h1>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
                     <select className="form-select" value={viewState} onChange={e => setViewState(e.target.value)}>
                         <option value="daily">Daily Report</option>
                         <option value="monthly">Monthly Report</option>
@@ -93,35 +98,101 @@ const Reports = () => {
                         </>
                     )}
 
+                    <select
+                        className="form-select"
+                        value={locationFilter}
+                        onChange={e => setLocationFilter(e.target.value)}
+                        style={{ minWidth: '130px' }}
+                    >
+                        <option value="All">📍 All Locations</option>
+                        <option value="Shop">🏪 Shop</option>
+                        <option value="Stall">🏕️ Stall</option>
+                    </select>
+
                     <button className="btn btn-primary" onClick={exportCSV}>Export CSV</button>
                 </div>
             </div>
 
             {data && (
                 <>
+                    {/* Profit Summary Cards */}
                     <div className="kpi-grid">
                         <div className="card kpi-card">
                             <div className="kpi-info" style={{ marginLeft: 0 }}>
-                                <h3>{viewState === 'daily' ? "Today's" : "Month's"} Sales</h3>
-                                <p>₹{data.total_sales.toLocaleString()}</p>
+                                <h3>Total Selling Price</h3>
+                                <p style={{ color: 'var(--primary)' }}>₹{(data.total_selling_price ?? data.total_sales ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
                             </div>
                         </div>
                         <div className="card kpi-card">
                             <div className="kpi-info" style={{ marginLeft: 0 }}>
-                                <h3>Total Historical Revenue</h3>
-                                <p>₹{summary?.total_sales_price?.toLocaleString() ?? '0'}</p>
+                                <h3>Total Cost Price <span style={{ fontSize: '0.7rem', fontWeight: 400, color: 'var(--text-muted)' }}>(COGS)</span></h3>
+                                <p style={{ color: 'var(--warning, #f59e0b)' }}>₹{(data.total_cost_price ?? data.cogs ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
                             </div>
                         </div>
                         <div className="card kpi-card">
                             <div className="kpi-info" style={{ marginLeft: 0 }}>
-                                <h3>Total Buy Price (Stock)</h3>
-                                <p>₹{summary?.total_buy_price?.toLocaleString() ?? '0'}</p>
+                                <h3>Total Profit <span style={{ fontSize: '0.7rem', fontWeight: 400, color: 'var(--text-muted)' }}>(Selling − Cost)</span></h3>
+                                <p style={{ color: (data.total_profit ?? 0) >= 0 ? 'var(--success, #10b981)' : 'var(--danger)' }}>
+                                    ₹{(data.total_profit ?? data.gross_profit ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="card kpi-card">
+                            <div className="kpi-info" style={{ marginLeft: 0 }}>
+                                <h3>Total Expenses</h3>
+                                <p style={{ color: 'var(--danger, #ef4444)' }}>₹{(data.total_expenses ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Final Profit — highlighted card */}
+                    <div style={{ marginTop: '1rem', marginBottom: '1.5rem' }}>
+                        <div className="card" style={{
+                            background: (data.final_profit ?? data.net_profit ?? 0) >= 0
+                                ? 'linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(16,185,129,0.03) 100%)'
+                                : 'linear-gradient(135deg, rgba(239,68,68,0.1) 0%, rgba(239,68,68,0.03) 100%)',
+                            border: `1px solid ${(data.final_profit ?? data.net_profit ?? 0) >= 0 ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`,
+                            padding: '1.5rem',
+                            textAlign: 'center'
+                        }}>
+                            <h3 style={{ margin: 0, marginBottom: '0.5rem', fontSize: '1rem', color: 'var(--text-muted)' }}>
+                                Final Profit <span style={{ fontSize: '0.8rem' }}>(Total Profit − Expenses)</span>
+                            </h3>
+                            <p style={{
+                                margin: 0,
+                                fontSize: '2rem',
+                                fontWeight: 800,
+                                color: (data.final_profit ?? data.net_profit ?? 0) >= 0 ? 'var(--success, #10b981)' : 'var(--danger, #ef4444)'
+                            }}>
+                                ₹{(data.final_profit ?? data.net_profit ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Additional info row */}
+                    <div className="kpi-grid" style={{ marginBottom: '1.5rem' }}>
+                        <div className="card kpi-card">
+                            <div className="kpi-info" style={{ marginLeft: 0 }}>
+                                <h3>{viewState === 'daily' ? "Today's" : "Month's"} Invoices</h3>
+                                <p>{data.total_invoices}</p>
+                            </div>
+                        </div>
+                        <div className="card kpi-card">
+                            <div className="kpi-info" style={{ marginLeft: 0 }}>
+                                <h3>Total Discount</h3>
+                                <p>₹{(data.total_discount ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
+                            </div>
+                        </div>
+                        <div className="card kpi-card">
+                            <div className="kpi-info" style={{ marginLeft: 0 }}>
+                                <h3>Total Tax</h3>
+                                <p>₹{(data.total_tax ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
                             </div>
                         </div>
                         <div className="card kpi-card">
                             <div className="kpi-info" style={{ marginLeft: 0 }}>
                                 <h3>Pending Credits</h3>
-                                <p style={{ color: 'var(--danger)' }}>₹{summary?.credits_pending?.toLocaleString() ?? '0'}</p>
+                                <p style={{ color: 'var(--danger)' }}>₹{summary?.credits_pending?.toLocaleString('en-IN', { minimumFractionDigits: 2 }) ?? '0.00'}</p>
                             </div>
                         </div>
                     </div>
@@ -157,6 +228,39 @@ const Reports = () => {
                             </div>
                         </div>
                     </div>
+
+                    {/* Monthly expense breakdown */}
+                    {viewState === 'monthly' && data.expense_breakdown && Object.keys(data.expense_breakdown).length > 0 && (
+                        <div className="card" style={{ marginTop: '1.5rem' }}>
+                            <h3 style={{ marginBottom: '1rem' }}>Expense Breakdown</h3>
+                            <div className="table-responsive">
+                                <table className="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Category</th>
+                                            <th style={{ textAlign: 'right' }}>Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {Object.entries(data.expense_breakdown || {}).sort((a, b) => b[1] - a[1]).map(([cat, amt]) => (
+                                            <tr key={cat}>
+                                                <td><span className="badge badge-primary">{cat}</span></td>
+                                                <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--danger, #ef4444)' }}>
+                                                    ₹{amt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        <tr style={{ borderTop: '2px solid var(--border-color)' }}>
+                                            <td style={{ fontWeight: 700 }}>Total</td>
+                                            <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--danger, #ef4444)' }}>
+                                                ₹{(data.total_expenses ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
                 </>
             )}
         </div>

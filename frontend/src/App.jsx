@@ -10,6 +10,7 @@ import Returns from './pages/Returns';
 import Reports from './pages/Reports';
 import Invoices from './pages/Invoices';
 import Users from './pages/Users';
+import Expenses from './pages/Expenses';
 import MainLayout from './components/MainLayout';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -71,6 +72,10 @@ function App() {
 
           <Route path="users" element={
             <ProtectedRoute allowedRoles={[ROLES.ADMIN]}><Users /></ProtectedRoute>
+          } />
+
+          <Route path="expenses" element={
+            <ProtectedRoute allowedRoles={[ROLES.ADMIN]}><Expenses /></ProtectedRoute>
           } />
         </Route>
       </Routes>

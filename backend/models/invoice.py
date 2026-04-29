@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime, timezone
 from enum import Enum
+from models.expense import RelatedTo
 
 class PaymentMethod(str, Enum):
     cash = "Cash"
@@ -35,6 +36,7 @@ class Invoice(Document):
     payment_method: PaymentMethod = PaymentMethod.cash
     payment_status: PaymentStatus = PaymentStatus.paid
     paid_amount: float
+    related_to: RelatedTo = RelatedTo.shop  # Shop or Stall
     created_by: str       # user id
     created_by_name: str  # snapshot
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

@@ -10,7 +10,8 @@ from models.product import Product
 from models.stock_entry import StockEntry
 from models.invoice import Invoice
 from models.return_model import Return
-from routers import auth, users, categories, products, stock, invoices, returns, reports
+from models.expense import Expense
+from routers import auth, users, categories, products, stock, invoices, returns, reports, expenses
 from core.security import get_password_hash
 
 app = FastAPI(
@@ -36,13 +37,14 @@ app.include_router(stock.router)
 app.include_router(invoices.router)
 app.include_router(returns.router)
 app.include_router(reports.router)
+app.include_router(expenses.router)
 
 @app.on_event("startup")
 async def startup():
     client = AsyncIOMotorClient(settings.MONGODB_URL)
     await init_beanie(
         database=client[settings.DB_NAME],
-        document_models=[User, Category, Product, StockEntry, Invoice, Return]
+        document_models=[User, Category, Product, StockEntry, Invoice, Return, Expense]
     )
     await seed_default_admin()
 
