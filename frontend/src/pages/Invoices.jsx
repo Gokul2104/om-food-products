@@ -140,7 +140,7 @@ const Invoices = () => {
             </div>
 
             <div className="card" style={{ marginBottom: '2rem' }}>
-                <div className="card-body" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                <div className="card-body invoice-filters" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                     <div className="form-group" style={{ flex: 1, minWidth: '250px', marginBottom: 0 }}>
                         <div style={{ position: 'relative' }}>
                             <Search size={18} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
@@ -178,7 +178,8 @@ const Invoices = () => {
                 </div>
             )}
 
-            <div className="card">
+            {/* Desktop Table */}
+            <div className="card invoice-table-desktop">
                 <div className="table-responsive">
                     <table className="table">
                         <thead>
@@ -225,38 +226,22 @@ const Invoices = () => {
                                         </td>
                                         <td>
                                             <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                <button
-                                                    className="btn btn-secondary btn-sm"
-                                                    title="View Detail"
-                                                    onClick={() => openInvoiceDetail(inv)}
-                                                >
+                                                <button className="btn btn-secondary btn-sm" title="View Detail" onClick={() => openInvoiceDetail(inv)}>
                                                     <Eye size={16} />
                                                 </button>
                                                 {isAdminOrBiller && (
-                                                    <button
-                                                        className="btn btn-secondary btn-sm"
-                                                        title="Edit Invoice"
-                                                        onClick={(e) => openEdit(e, inv)}
-                                                    >
+                                                    <button className="btn btn-secondary btn-sm" title="Edit Invoice" onClick={(e) => openEdit(e, inv)}>
                                                         <Pencil size={16} />
                                                     </button>
                                                 )}
-                                                <button
-                                                    className="btn btn-secondary btn-sm"
-                                                    title="Print"
-                                                    onClick={(e) => handleQuickPrint(e, inv)}
-                                                >
+                                                <button className="btn btn-secondary btn-sm" title="Print" onClick={(e) => handleQuickPrint(e, inv)}>
                                                     <Printer size={16} />
                                                 </button>
-                                                <button
-                                                    className="btn btn-secondary btn-sm"
-                                                    title="Download PDF"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setSelectedInvoice(inv);
-                                                        setTimeout(() => downloadAsPDF(printRef, inv.invoice_number), 100);
-                                                    }}
-                                                >
+                                                <button className="btn btn-secondary btn-sm" title="Download PDF" onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setSelectedInvoice(inv);
+                                                    setTimeout(() => downloadAsPDF(printRef, inv.invoice_number), 100);
+                                                }}>
                                                     <Download size={16} />
                                                 </button>
                                             </div>
@@ -267,6 +252,81 @@ const Invoices = () => {
                         </tbody>
                     </table>
                 </div>
+            </div>
+
+            {/* Mobile Card Layout */}
+            <div className="invoice-cards-mobile">
+                {loading ? (
+                    <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>Loading invoices...</div>
+                ) : filteredInvoices.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No invoices found</div>
+                ) : (
+                    filteredInvoices.map((inv) => (
+                        <div className="invoice-card" key={inv.id}>
+                            <div className="invoice-card-header">
+                                <div>
+                                    <div className="inv-number">{inv.invoice_number}</div>
+                                    <div style={{ fontSize: '0.85rem', marginTop: '0.15rem' }}>{inv.customer_name || 'Walking Customer'}</div>
+                                </div>
+                                <div style={{ textAlign: 'right' }}>
+                                    <div className="inv-date">{formatDateIST(inv.created_at)}</div>
+                                    <span className={`badge ${(inv.related_to || 'Shop') === 'Stall' ? 'badge-warning' : 'badge-success'}`} style={{ fontSize: '0.7rem', marginTop: '0.25rem' }}>
+                                        {(inv.related_to || 'Shop') === 'Shop' ? '🏪' : '🏕️'} {inv.related_to || 'Shop'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="invoice-card-body">
+                                <div>
+                                    <div className="label">Bill Amount</div>
+                                    <div className="value">₹{inv.grand_total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                                </div>
+                                <div>
+                                    <div className="label">Paid</div>
+                                    <div className="value">₹{inv.paid_amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                                </div>
+                                <div>
+                                    <div className="label">Balance</div>
+                                    <div className="value" style={{ color: inv.grand_total - inv.paid_amount > 0 ? 'var(--danger)' : 'var(--success)' }}>
+                                        ₹{(inv.grand_total - inv.paid_amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                    </div>
+                                </div>
+                                <div>
+                                    <div className="label">Status</div>
+                                    <div>
+                                        <span className={`badge badge-${getStatusType(inv.payment_status)}`}>
+                                            {inv.payment_status}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="invoice-card-footer">
+                                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{inv.payment_method}</span>
+                                <div className="invoice-card-actions">
+                                    <button className="btn btn-secondary btn-sm" title="View" onClick={() => openInvoiceDetail(inv)}>
+                                        <Eye size={15} />
+                                    </button>
+                                    {isAdminOrBiller && (
+                                        <button className="btn btn-secondary btn-sm" title="Edit" onClick={(e) => openEdit(e, inv)}>
+                                            <Pencil size={15} />
+                                        </button>
+                                    )}
+                                    <button className="btn btn-secondary btn-sm" title="Print" onClick={(e) => handleQuickPrint(e, inv)}>
+                                        <Printer size={15} />
+                                    </button>
+                                    <button className="btn btn-secondary btn-sm" title="PDF" onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedInvoice(inv);
+                                        setTimeout(() => downloadAsPDF(printRef, inv.invoice_number), 100);
+                                    }}>
+                                        <Download size={15} />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ))
+                )}
             </div>
 
             {/* Hidden printable area for quick print and PDF generation */}
